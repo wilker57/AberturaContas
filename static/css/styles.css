@@ -48,6 +48,29 @@ body {
     width: 100%;
 }
 
+/* Logo Component */
+.logo-container {
+    text-align: center;
+    margin: 20px 0;
+    padding: 20px;
+}
+
+.main-logo {
+    width: 80px;
+    height: 80px;
+    margin-bottom: 15px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.system-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--primary-color);
+    margin: 0;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
 .content-area {
     position: relative;
 }
@@ -190,6 +213,12 @@ body {
     min-height: 100vh;
     background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
     transition: margin-left 0.2s;
+}
+
+/* Layout sem sidebar (páginas de autenticação) */
+.no-sidebar .main-content {
+    margin-left: 0;
+    width: 100%;
 }
 
 /* Formulários */

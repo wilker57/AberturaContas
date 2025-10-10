@@ -32,7 +32,7 @@
                                 <a href="{{ url_for('views.editar_banco', id_banco=banco.id_banco) }}" class="btn btn-sm btn-warning">
                                     <i class="fas fa-edit"></i> Editar
                                 </a>
-                                <form method="POST" action="{{ url_for('views.excluir_banco', id_banco=banco.id_banco) }}" style="display: inline;" onsubmit="return confirm('Tem certeza que deseja excluir este banco?')">
+                                <form method="POST" action="{{ url_for('views.excluir_banco', id_banco=banco.id_banco) }}" style="display: inline;" onsubmit="return handleDeleteConfirm(event, 'Tem certeza que deseja excluir este banco?')">
                                     <button type="submit" class="btn btn-sm btn-danger">
                                         <i class="fas fa-trash"></i> Excluir
                                     </button>

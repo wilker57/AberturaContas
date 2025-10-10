@@ -92,9 +92,38 @@ function showMessage(message, type = 'info') {
     }, 5000);
 }
 
-// Confirmation dialogs for delete actions
-function confirmDelete(message = 'Tem certeza que deseja excluir este item?') {
-    return confirm(message);
+// Confirmation dialogs for delete actions using SweetAlert2
+async function confirmDelete(message = 'Tem certeza que deseja excluir este item?') {
+    const result = await Swal.fire({
+        title: 'Confirmar Exclusão',
+        text: message,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#e74c3c',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: '<i class="fas fa-trash"></i> Sim, excluir!',
+        cancelButtonText: '<i class="fas fa-times"></i> Cancelar',
+        customClass: {
+            confirmButton: 'btn btn-danger',
+            cancelButton: 'btn btn-secondary'
+        },
+        buttonsStyling: false
+    });
+    return result.isConfirmed;
+}
+
+// Handle form deletion with async confirmation
+function handleDeleteConfirm(event, message) {
+    event.preventDefault();
+    const form = event.target;
+    
+    confirmDelete(message).then(confirmed => {
+        if (confirmed) {
+            form.submit();
+        }
+    });
+    
+    return false;
 }
 
 // Utility functions for form handling
@@ -363,49 +392,43 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// Função para mostrar alertas
-function showAlert(alertId, message, type) {
-    const alert = document.getElementById(alertId);
-    if (alert) {
-        const span = alert.querySelector('span');
-        const icon = alert.querySelector('i');
-        
-        if (span) span.textContent = message;
-        
-        // Remover classes de tipo anteriores
-        alert.classList.remove('alert-error', 'alert-success', 'alert-warning', 'alert-info');
-        
-        // Adicionar classe do tipo
-        if (type) alert.classList.add(`alert-${type}`);
-        
-        // Atualizar ícone baseado no tipo
-        if (icon) {
-            icon.className = 'fas';
-            switch (type) {
-                case 'success':
-                    icon.classList.add('fa-check-circle');
-                    break;
-                case 'error':
-                    icon.classList.add('fa-exclamation-circle');
-                    break;
-                case 'warning':
-                    icon.classList.add('fa-exclamation-triangle');
-                    break;
-                case 'info':
-                default:
-                    icon.classList.add('fa-info-circle');
-                    break;
-            }
-        }
-        
-        // Mostrar alerta
-        alert.classList.remove('hidden');
-        
-        // Auto-ocultar após 5 segundos
-        setTimeout(() => {
-            alert.classList.add('hidden');
-        }, 5000);
+// Função para mostrar alertas usando SweetAlert2
+function showAlert(alertId, message, type = 'info') {
+    let icon, title;
+    
+    switch (type) {
+        case 'success':
+            icon = 'success';
+            title = 'Sucesso';
+            break;
+        case 'error':
+            icon = 'error';
+            title = 'Erro';
+            break;
+        case 'warning':
+            icon = 'warning';
+            title = 'Atenção';
+            break;
+        case 'info':
+        default:
+            icon = 'info';
+            title = 'Informação';
+            break;
     }
+    
+    Swal.fire({
+        title: title,
+        text: message,
+        icon: icon,
+        confirmButtonColor: '#3498db',
+        confirmButtonText: '<i class="fas fa-check"></i> OK',
+        customClass: {
+            confirmButton: 'btn btn-primary'
+        },
+        buttonsStyling: false,
+        timer: type === 'success' ? 3000 : undefined,
+        timerProgressBar: type === 'success'
+    });
 }
 
 // Função de logout

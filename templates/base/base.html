@@ -8,16 +8,19 @@
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/favicon.png') }}" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <!-- SweetAlert2 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.14.1/dist/sweetalert2.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.14.1/dist/sweetalert2.all.min.js"></script>
 </head>
-<body>
-     <!-- Sidebar -->
+<body class="{% if not session.user_id %}no-sidebar{% endif %}">
+    {% if session.user_id %}
+    <!-- Sidebar (only when logged in) -->
     <nav class="sidebar">
         <div class="nav-brand">
             <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo" class="logo">
             <span class="brand-text">Abertura de Contas</span>
         </div>
         
-        {% if session.user_id %}
         <div class="nav-menu">
             <a href="{{ url_for('views.dashboard') }}" class="nav-link">
                 <i class="fas fa-home"></i> Dashboard
@@ -49,37 +52,37 @@
             <i class="fas fa-user"></i>
             <span>{{ session.user_name }}</span>
         </div>
-        {% endif %}
     </nav>
+    {% endif %}
     
     <div class="container">
-        {% include 'components/logo.html' %}
         
-        <!-- Telas de Autenticação -->
-        <div id="login-screen" class="screen active">
-            {% include 'auth/login.html' %}
-        </div>
-        
-        <div id="forgot-password-screen" class="screen">
-            {% include 'auth/forgot-password.html' %}
-        </div>
-        
-        <div id="register-screen" class="screen">
-            {% include 'auth/register.html' %}
-        </div>
-        
-        <!-- Main Screen -->
-        <div id="main-screen" class="screen">
-            {% include 'components/navbar.html' %}
+        <!-- Main Content Area -->
+        <div class="main-content">
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="flash-messages">
+                        {% for category, message in messages %}
+                            <div class="flash-message flash-{{ category }}">
+                                {% if category == 'error' %}
+                                    <i class="fas fa-exclamation-circle"></i>
+                                {% elif category == 'success' %}
+                                    <i class="fas fa-check-circle"></i>
+                                {% elif category == 'warning' %}
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                {% else %}
+                                    <i class="fas fa-info-circle"></i>
+                                {% endif %}
+                                {{ message }}
+                                <span class="flash-close" onclick="this.parentElement.style.display='none'">&times;</span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
             
-            <div class="content-area">
-                {% include 'sections/dashboard.html' %}
-                {% include 'sections/remessas.html' %}
-                {% include 'sections/concedentes.html' %}
-                {% include 'sections/bancos.html' %}
-                {% include 'sections/agencias.html' %}
-                {% include 'sections/usuarios.html' %}
-            </div>
+            {% block content %}{% endblock %}
         </div>
     </div>
 

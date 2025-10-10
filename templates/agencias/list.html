@@ -40,7 +40,7 @@
                                 <a href="{{ url_for('views.editar_agencia', id_agencia=agencia.id_agencia) }}" class="btn btn-sm btn-warning">
                                     <i class="fas fa-edit"></i> Editar
                                 </a>
-                                <form method="POST" action="{{ url_for('views.excluir_agencia', id_agencia=agencia.id_agencia) }}" style="display: inline;" onsubmit="return confirm('Tem certeza que deseja excluir esta agência?')">
+                                <form method="POST" action="{{ url_for('views.excluir_agencia', id_agencia=agencia.id_agencia) }}" style="display: inline;" onsubmit="return handleDeleteConfirm(event, 'Tem certeza que deseja excluir esta agência?')">>
                                     <button type="submit" class="btn btn-sm btn-danger">
                                         <i class="fas fa-trash"></i> Excluir
                                     </button>
