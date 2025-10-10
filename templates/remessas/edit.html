@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+
+{% block title %}Editar Remessa - Abertura de Contas{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <div class="page-header">
+        <h1><i class="fas fa-edit"></i> Editar Remessa</h1>
+        <button type="button" class="btn btn-secondary" onclick="window.location.href='{{ url_for('views.remessas') }}'">
+            <i class="fas fa-arrow-left"></i> Voltar
+        </button>
+    </div>
+
+    <div class="content-card">
+        <form method="POST" class="form-container">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="num_processo">Número do Processo:</label>
+                    <input type="text" id="num_processo" name="num_processo" value="{{ remessa.num_processo }}" required class="form-control">
+                </div>
+
+                <div class="form-group">
+                    <label for="num_remessa">Número da Remessa (Gerado automaticamente):</label>
+                    <input type="text" id="num_remessa" name="num_remessa" value="{{ remessa.num_remessa }}" readonly class="form-control" style="background-color: #f8f9fa; cursor: not-allowed;">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="nome_proponente">Nome do Proponente:</label>
+                <input type="text" id="nome_proponente" name="nome_proponente" value="{{ remessa.nome_proponente }}" required class="form-control">
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="cpf_cnpj">CPF/CNPJ:</label>
+                    <input type="text" id="cpf_cnpj" name="cpf_cnpj" value="{{ remessa.cpf_cnpj }}" required class="form-control">
+                </div>
+
+                <div class="form-group">
+                    <label for="num_convenio">Número do Convênio:</label>
+                    <input type="text" id="num_convenio" name="num_convenio" value="{{ remessa.num_convenio }}" class="form-control">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="id_concedente">Concedente:</label>
+                    <select id="id_concedente" name="id_concedente" required class="form-control">
+                        {% for concedente in concedentes %}
+                        <option value="{{ concedente.id_concedente }}" {% if concedente.id_concedente == remessa.id_concedente %}selected{% endif %}>
+                            {{ concedente.sigla }} - {{ concedente.nome }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="id_banco">Banco:</label>
+                    <select id="id_banco" name="id_banco" class="form-control">
+                        <option value="">Selecione um banco (opcional)</option>
+                        {% for banco in bancos %}
+                        <option value="{{ banco.id_banco }}" {% if banco.id_banco == remessa.id_banco %}selected{% endif %}>
+                            {{ banco.nome }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="situacao">Situação:</label>
+                <select id="situacao" name="situacao" required class="form-control">
+                    <option value="Em Preparação" {% if remessa.situacao == 'Em Preparação' %}selected{% endif %}>Em Preparação</option>
+                    <option value="Enviado" {% if remessa.situacao == 'Enviado' %}selected{% endif %}>Enviado</option>
+                    <option value="Aguardando Retorno" {% if remessa.situacao == 'Aguardando Retorno' %}selected{% endif %}>Aguardando Retorno</option>
+                    <option value="Aprovado" {% if remessa.situacao == 'Aprovado' %}selected{% endif %}>Aprovado</option>
+                    <option value="Conta Aberta" {% if remessa.situacao == 'Conta Aberta' %}selected{% endif %}>Conta Aberta</option>
+                    <option value="Erro" {% if remessa.situacao == 'Erro' %}selected{% endif %}>Erro</option>
+                </select>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-warning">
+                    <i class="fas fa-save"></i> Salvar Alterações
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="window.location.href='{{ url_for('views.remessas') }}'">
+                    <i class="fas fa-times"></i> Cancelar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+
+{% block title %}Criar Agência - Abertura de Contas{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <div class="page-header">
+        <h1><i class="fas fa-plus"></i> Criar Agência</h1>
+        <button type="button" class="btn btn-secondary" onclick="window.location.href='{{ url_for('views.agencias') }}'">
+            <i class="fas fa-arrow-left"></i> Voltar
+        </button>
+    </div>
+
+    <div class="content-card">
+        <form method="POST" class="form-container">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="nome_agencia">Nome da Agência:</label>
+                    <input type="text" id="nome_agencia" name="nome_agencia" required class="form-control" placeholder="Ex: Agência Centro">
+                </div>
+
+                <div class="form-group">
+                    <label for="id_banco">Banco:</label>
+                    <select id="id_banco" name="id_banco" required class="form-control">
+                        <option value="">Selecione um banco</option>
+                        {% for banco in bancos %}
+                        <option value="{{ banco.id_banco }}">{{ banco.nome }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="num_agencia">Número da Agência:</label>
+                    <input type="text" id="num_agencia" name="num_agencia" required class="form-control" placeholder="Ex: 1234">
+                </div>
+
+                <div class="form-group">
+                    <label for="dv_agencia">Dígito Verificador:</label>
+                    <input type="text" id="dv_agencia" name="dv_agencia" class="form-control" placeholder="Ex: 5">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="logadouro">Logradouro:</label>
+                <input type="text" id="logadouro" name="logadouro" class="form-control" placeholder="Ex: Rua das Flores, 123">
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="cidade">Cidade:</label>
+                    <input type="text" id="cidade" name="cidade" required class="form-control" placeholder="Ex: São Paulo">
+                </div>
+
+                <div class="form-group">
+                    <label for="uf">UF:</label>
+                    <select id="uf" name="uf" required class="form-control">
+                        <option value="">Selecione</option>
+                        <option value="AC">AC</option>
+                        <option value="AL">AL</option>
+                        <option value="AP">AP</option>
+                        <option value="AM">AM</option>
+                        <option value="BA">BA</option>
+                        <option value="CE">CE</option>
+                        <option value="DF">DF</option>
+                        <option value="ES">ES</option>
+                        <option value="GO">GO</option>
+                        <option value="MA">MA</option>
+                        <option value="MT">MT</option>
+                        <option value="MS">MS</option>
+                        <option value="MG">MG</option>
+                        <option value="PA">PA</option>
+                        <option value="PB">PB</option>
+                        <option value="PR">PR</option>
+                        <option value="PE">PE</option>
+                        <option value="PI">PI</option>
+                        <option value="RJ">RJ</option>
+                        <option value="RN">RN</option>
+                        <option value="RS">RS</option>
+                        <option value="RO">RO</option>
+                        <option value="RR">RR</option>
+                        <option value="SC">SC</option>
+                        <option value="SP">SP</option>
+                        <option value="SE">SE</option>
+                        <option value="TO">TO</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Salvar
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="window.location.href='{{ url_for('views.agencias') }}'">
+                    <i class="fas fa-times"></i> Cancelar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

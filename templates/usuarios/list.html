@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+
+{% block title %}Usuários - Abertura de Contas{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <div class="page-header">
+        <h1><i class="fas fa-users"></i> Usuários</h1>
+        <a href="{{ url_for('views.criar_usuario') }}" class="btn btn-success">
+            <i class="fas fa-plus"></i> Novo Usuário
+        </a>
+    </div>
+
+    <div class="content-card">
+        {% if usuarios %}
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        
+                        <th>Nome</th>
+                        <th>Login</th>
+                        <th>Email</th>
+                        <th>Perfil</th>
+                        <th>Instituição</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for usuario in usuarios %}
+                    <tr>
+                        
+                        <td>{{ usuario.nome }}</td>
+                        <td><strong>{{ usuario.login }}</strong></td>
+                        <td>{{ usuario.email }}</td>
+                        <td>
+                            {% if usuario.perfil_enum == 'ADMINISTRADOR' %}
+                                <span class="badge badge-danger">{{ usuario.perfil_enum }}</span>
+                            {% elif usuario.perfil_enum == 'OPERADOR' %}
+                                <span class="badge badge-warning">{{ usuario.perfil_enum }}</span>
+                            {% else %}
+                                <span class="badge badge-info">{{ usuario.perfil_enum }}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ usuario.instituicao }}</td>
+                        <td>
+                            <div class="action-buttons">
+                                <a href="{{ url_for('views.editar_usuario', id_usuario=usuario.id_usuario) }}" class="btn btn-sm btn-warning">
+                                    <i class="fas fa-edit"></i> Editar
+                                </a>
+                                {% if usuario.id_usuario != session.user_id %}
+                                <form method="POST" action="{{ url_for('views.excluir_usuario', id_usuario=usuario.id_usuario) }}" style="display: inline;" onsubmit="return confirm('Tem certeza que deseja excluir este usuário?')">
+                                    <button type="submit" class="btn btn-sm btn-danger">
+                                        <i class="fas fa-trash"></i> Excluir
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-users fa-3x"></i>
+            <h3>Nenhum usuário cadastrado</h3>
+            <p>Comece adicionando o primeiro usuário ao sistema.</p>
+            <a href="{{ url_for('views.criar_usuario') }}" class="btn btn-success">
+                <i class="fas fa-plus"></i> Criar Primeiro Usuário
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,148 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - Abertura de Contas{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <div class="page-header">
+        <div class="header-content">
+            <h2>Sistema de Abertura de Contas</h2>
+        </div>
+        <div class="user-info">
+            <div class="user-details">
+                <i class="fas fa-user-circle"></i>
+                <span>Bem-vindo, {{ session.user_name or 'Usuário' }}</span>
+            </div>
+            <a href="{{ url_for('views.logout') }}" class="btn btn-danger btn-sm">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </a>
+        </div>
+    </div>
+
+    <!-- AÇÕES RÁPIDAS -->
+    <div class="quick-actions">
+        <div class="section-title">
+            <h2>Ações Rápidas</h2>
+        </div>
+        <div class="actions-grid">
+            <a href="{{ url_for('views.criar_remessa') }}" class="action-card">
+                <i class="fas fa-plus-circle"></i>
+                <h3>Nova Remessa</h3>
+                <p>Criar uma nova remessa</p>
+            </a>
+            <a href="{{ url_for('views.criar_banco') }}" class="action-card">
+                <i class="fas fa-university"></i>
+                <h3>Novo Banco</h3>
+                <p>Cadastrar um novo banco</p>
+            </a>
+            <a href="{{ url_for('views.criar_agencia') }}" class="action-card">
+                <i class="fas fa-building"></i>
+                <h3>Nova Agência</h3>
+                <p>Cadastrar uma nova agência</p>
+            </a>
+            <a href="{{ url_for('views.criar_concedente') }}" class="action-card">
+                <i class="fas fa-handshake"></i>
+                <h3>Novo Concedente</h3>
+                <p>Cadastrar um novo concedente</p>
+            </a>
+        </div>
+    </div>
+
+    <!-- CARDS visão Geral -->
+     <div class="section-title">
+        <h2>Visão Geral</h2>
+    </div>
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-users"></i></div>
+            <div class="stat-content">
+                <h3>{{ stats.total_usuarios }}</h3>
+                <p>Usuários</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-university"></i></div>
+            <div class="stat-content">
+                <h3>{{ stats.total_bancos }}</h3>
+                <p>Bancos</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-building"></i></div>
+            <div class="stat-content">
+                <h3>{{ stats.total_agencias }}</h3>
+                <p>Agências</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-handshake"></i></div>
+            <div class="stat-content">
+                <h3>{{ stats.total_concedentes }}</h3>
+                <p>Concedentes</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-file-invoice"></i></div>
+            <div class="stat-content">
+                <h3>{{ stats.total_remessas }}</h3>
+                <p>Remessas</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-credit-card"></i></div>
+            <div class="stat-content">
+                <h3>{{ stats.total_contas }}</h3>
+                <p>Contas Convênio</p>
+            </div>
+        </div>
+    </div>
+    <div class="section-title">
+        <h2>Remessas por Situação</h2>
+    </div>
+    <div class="remessas-status-grid">
+        <div class="remessa-card status-preparacao">
+            <div class="remessa-title">
+                <i class="fas fa-edit"></i>
+                <span>Em Preparação</span>
+            </div>
+            <h3>{{ remessas.preparacao }}</h3>
+        </div>
+        <div class="remessa-card status-enviado">
+            <div class="remessa-title">
+                <i class="fas fa-paper-plane"></i>
+                <span>Enviado</span>
+            </div>
+            <h3>{{ remessas.enviado }}</h3>
+        </div>
+        <div class="remessa-card status-aguardando">
+            <div class="remessa-title">
+                <i class="fas fa-hourglass-half"></i>
+                <span>Aguardando Retorno</span>
+            </div>
+            <h3>{{ remessas.aguardando }}</h3>
+        </div>
+        <div class="remessa-card status-aprovado">
+            <div class="remessa-title">
+                <i class="fas fa-check-circle"></i>
+                <span>Aprovado</span>
+            </div>
+            <h3>{{ remessas.aprovado }}</h3>
+        </div>
+        <div class="remessa-card status-aberta">
+            <div class="remessa-title">
+                <i class="fas fa-unlock"></i>
+                <span>Conta Aberta</span>
+            </div>
+            <h3>{{ remessas.aberta }}</h3>
+        </div>
+        <div class="remessa-card status-erro">
+            <div class="remessa-title">
+                <i class="fas fa-times-circle"></i>
+                <span>Erro</span>
+            </div>
+            <h3>{{ remessas.erro }}</h3>
+        </div>
+    </div>
+</div>
+</div>
+{% endblock %}

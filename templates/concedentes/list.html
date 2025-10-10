@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+
+{% block title %}Concedentes - Abertura de Contas{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <div class="page-header">
+        <h1><i class="fas fa-handshake"></i> Concedentes</h1>
+        <a href="{{ url_for('views.criar_concedente') }}" class="btn btn-success">
+            <i class="fas fa-plus"></i> Novo Concedente
+        </a>
+    </div>
+
+    <div class="content-card">
+        {% if concedentes %}
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        
+                        <th>Código Secretaria</th>
+                        <th>Sigla</th>
+                        <th>Nome</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for concedente in concedentes %}
+                    <tr>
+                        
+                        <td>{{ concedente.codigo_secretaria }}</td>
+                        <td><strong>{{ concedente.sigla }}</strong></td>
+                        <td>{{ concedente.nome }}</td>
+                        <td>
+                            <div class="action-buttons">
+                                <a href="{{ url_for('views.editar_concedente', id_concedente=concedente.id_concedente) }}" class="btn btn-sm btn-warning">
+                                    <i class="fas fa-edit"></i> Editar
+                                </a>
+                                <form method="POST" action="{{ url_for('views.excluir_concedente', id_concedente=concedente.id_concedente) }}" style="display: inline;" onsubmit="return confirm('Tem certeza que deseja excluir este concedente?')">
+                                    <button type="submit" class="btn btn-sm btn-danger">
+                                        <i class="fas fa-trash"></i> Excluir
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-handshake fa-3x"></i>
+            <h3>Nenhum concedente cadastrado</h3>
+            <p>Comece adicionando o primeiro concedente ao sistema.</p>
+            <a href="{{ url_for('views.criar_concedente') }}" class="btn btn-success">
+                <i class="fas fa-plus"></i> Criar Primeiro Concedente
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

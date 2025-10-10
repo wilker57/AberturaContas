@@ -1,0 +1,88 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Controle de Abertura de Contas de Convênios</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/favicon.png') }}" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+     <!-- Sidebar -->
+    <nav class="sidebar">
+        <div class="nav-brand">
+            <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo" class="logo">
+            <span class="brand-text">Abertura de Contas</span>
+        </div>
+        
+        {% if session.user_id %}
+        <div class="nav-menu">
+            <a href="{{ url_for('views.dashboard') }}" class="nav-link">
+                <i class="fas fa-home"></i> Dashboard
+            </a>
+            <a href="{{ url_for('views.bancos') }}" class="nav-link">
+                <i class="fas fa-university"></i> Bancos
+            </a>
+            <a href="{{ url_for('views.agencias') }}" class="nav-link">
+                <i class="fas fa-building"></i> Agências
+            </a>
+            <a href="{{ url_for('views.concedentes') }}" class="nav-link">
+                <i class="fas fa-handshake"></i> Concedentes
+            </a>
+            <a href="{{ url_for('views.remessas') }}" class="nav-link">
+                <i class="fas fa-file-invoice"></i> Remessas
+            </a>
+            <a href="{{ url_for('views.contas_convenio') }}" class="nav-link">
+                <i class="fas fa-credit-card"></i> Contas Convênio
+            </a>
+            <a href="{{ url_for('views.usuarios') }}" class="nav-link">
+                <i class="fas fa-users"></i> Usuários
+            </a>
+            <a href="{{ url_for('views.logout') }}" class="nav-link logout">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </a>
+        </div>
+        
+        <div class="user-info">
+            <i class="fas fa-user"></i>
+            <span>{{ session.user_name }}</span>
+        </div>
+        {% endif %}
+    </nav>
+    
+    <div class="container">
+        {% include 'components/logo.html' %}
+        
+        <!-- Telas de Autenticação -->
+        <div id="login-screen" class="screen active">
+            {% include 'auth/login.html' %}
+        </div>
+        
+        <div id="forgot-password-screen" class="screen">
+            {% include 'auth/forgot-password.html' %}
+        </div>
+        
+        <div id="register-screen" class="screen">
+            {% include 'auth/register.html' %}
+        </div>
+        
+        <!-- Main Screen -->
+        <div id="main-screen" class="screen">
+            {% include 'components/navbar.html' %}
+            
+            <div class="content-area">
+                {% include 'sections/dashboard.html' %}
+                {% include 'sections/remessas.html' %}
+                {% include 'sections/concedentes.html' %}
+                {% include 'sections/bancos.html' %}
+                {% include 'sections/agencias.html' %}
+                {% include 'sections/usuarios.html' %}
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

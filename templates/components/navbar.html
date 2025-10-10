@@ -1,0 +1,44 @@
+
+
+<!-- Sidebar Navigation -->
+<div class="sidebar">
+    <!-- Logo Section -->
+    <div class="logo-section">
+        <a href="/dashboard">
+            <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo do Sistema" class="logo">
+            <div class="system-name">Gestão de Controle</div>
+        </a>
+    </div>
+    <!-- Menu Section -->
+    <div class="menu-section">
+        <div class="menu-title">Menu</div>
+        <a href="/dashboard" class="menu-item">
+            <i class="fas fa-home"></i>
+            <span>Página Inicial</span>
+        </a>
+        <a href="/remessas" class="menu-item">
+            <i class="fas fa-file-invoice"></i>
+            <span>Remessas</span>
+        </a>
+        <a href="/concedentes" class="menu-item">
+            <i class="fas fa-building"></i>
+            <span>Concedentes</span>
+        </a>
+        <a href="/bancos" class="menu-item">
+            <i class="fas fa-university"></i>
+            <span>Bancos</span>
+        </a>
+        <a href="/agencias" class="menu-item">
+            <i class="fas fa-map-marker-alt"></i>
+            <span>Agências</span>
+        </a>
+        <a href="/usuarios" class="menu-item">
+            <i class="fas fa-users"></i>
+            <span>Usuários</span>
+        </a>
+    </div>
+
+    <button class="logout-btn"  onclick="logout()">
+        <i class="fas fa-sign-out-alt"></i> Sair
+    </button>
+</div>

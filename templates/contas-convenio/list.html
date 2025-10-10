@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+
+{% block title %}Contas Convênio - Abertura de Contas{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <div class="page-header">
+        <h1><i class="fas fa-credit-card"></i> Contas Convênio</h1>
+        <a href="{{ url_for('views.criar_conta_convenio') }}" class="btn btn-success">
+            <i class="fas fa-plus"></i> Nova Conta Convênio
+        </a>
+    </div>
+
+    <div class="content-card">
+        {% if contas %}
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        
+                        <th>Número da Conta</th>
+                        <th>DV</th>
+                        <th>Data Abertura</th>
+                        <th>Processo</th>
+                        <th>Proponente</th>
+                        <th>Agência</th>
+                        <th>Banco</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for conta in contas %}
+                    <tr>
+                        
+                        <td><strong>{{ conta.num_conta }}</strong></td>
+                        <td>{{ conta.dv_conta }}</td>
+                        <td>{{ conta.dt_abertura.strftime('%d/%m/%Y') if conta.dt_abertura else '-' }}</td>
+                        <td>{{ conta.num_processo }}</td>
+                        <td>{{ conta.nome_proponente }}</td>
+                        <td>{{ conta.nome_agencia }}</td>
+                        <td>{{ conta.banco_nome }}</td>
+                        <td>
+                            <div class="action-buttons">
+                                <a href="{{ url_for('views.editar_conta_convenio', id_conta_convenio=conta.id_conta_convenio) }}" class="btn btn-sm btn-warning">
+                                    <i class="fas fa-edit"></i> Editar
+                                </a>
+                                <form method="POST" action="{{ url_for('views.excluir_conta_convenio', id_conta_convenio=conta.id_conta_convenio) }}" style="display: inline;" onsubmit="return confirm('Tem certeza que deseja excluir esta conta convênio?')">
+                                    <button type="submit" class="btn btn-sm btn-danger">
+                                        <i class="fas fa-trash"></i> Excluir
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-credit-card fa-3x"></i>
+            <h3>Nenhuma conta convênio cadastrada</h3>
+            <p>Comece adicionando a primeira conta convênio ao sistema.</p>
+            <a href="{{ url_for('views.criar_conta_convenio') }}" class="btn btn-success">
+                <i class="fas fa-plus"></i> Criar Primeira Conta Convênio
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

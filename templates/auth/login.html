@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block title %}Login - Abertura de Contas{% endblock %}
+
+{% block content %}
+<div class="login-page">
+    <div class="login-container-center">
+        <div class="login-header">
+            <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo do Sistema" class="logo">
+            <h2 class="login-title">Acesso ao Sistema</h2>
+        </div>
+        
+        <form method="POST" class="login-form">
+            <div class="form-group">
+                <label for="login">
+                    <i class="fas fa-user"></i> Login
+                </label>
+                <input type="text" id="login" name="login" required placeholder="Digite seu login">
+            </div>
+            
+            <div class="form-group">
+                <label for="senha">
+                    <i class="fas fa-lock"></i> Senha
+                </label>
+                <input type="password" id="senha" name="senha" required placeholder="Digite sua senha">
+            </div>
+            
+            <button type="submit" class="btn btn-primary btn-full">
+                <i class="fas fa-sign-in-alt"></i>
+                Entrar
+            </button>
+        </form>
+        
+        <div class="login-options">
+            <a href="{{ url_for('views.forgot_password') }}" class="login-link">
+                <i class="fas fa-key"></i> Esqueceu a senha?
+            </a>
+            <span class="login-divider">|</span>
+            <a href="{{ url_for('views.registrar') }}" class="login-link">
+                <i class="fas fa-user-plus"></i> Cadastrar
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

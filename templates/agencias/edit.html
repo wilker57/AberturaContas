@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+
+{% block title %}Editar Agência - Abertura de Contas{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <div class="page-header">
+        <h1><i class="fas fa-edit"></i> Editar Agência</h1>
+        <button type="button" class="btn btn-secondary" onclick="window.location.href='{{ url_for('views.agencias') }}'">
+            <i class="fas fa-arrow-left"></i> Voltar
+        </button>
+    </div>
+
+    <div class="content-card">
+        <form method="POST" class="form-container">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="nome_agencia">Nome da Agência:</label>
+                    <input type="text" id="nome_agencia" name="nome_agencia" value="{{ agencia.nome_agencia }}" required class="form-control">
+                </div>
+
+                <div class="form-group">
+                    <label for="id_banco">Banco:</label>
+                    <select id="id_banco" name="id_banco" required class="form-control">
+                        {% for banco in bancos %}
+                        <option value="{{ banco.id_banco }}" {% if banco.id_banco == agencia.id_banco %}selected{% endif %}>{{ banco.nome }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="num_agencia">Número da Agência:</label>
+                    <input type="text" id="num_agencia" name="num_agencia" value="{{ agencia.num_agencia }}" required class="form-control">
+                </div>
+
+                <div class="form-group">
+                    <label for="dv_agencia">Dígito Verificador:</label>
+                    <input type="text" id="dv_agencia" name="dv_agencia" value="{{ agencia.dv_agencia }}" class="form-control">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="logadouro">Logradouro:</label>
+                <input type="text" id="logadouro" name="logadouro" value="{{ agencia.logadouro }}" class="form-control">
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="cidade">Cidade:</label>
+                    <input type="text" id="cidade" name="cidade" value="{{ agencia.cidade }}" required class="form-control">
+                </div>
+
+                <div class="form-group">
+                    <label for="uf">UF:</label>
+                    <select id="uf" name="uf" required class="form-control">
+                        <option value="AC" {% if agencia.uf == 'AC' %}selected{% endif %}>AC</option>
+                        <option value="AL" {% if agencia.uf == 'AL' %}selected{% endif %}>AL</option>
+                        <option value="AP" {% if agencia.uf == 'AP' %}selected{% endif %}>AP</option>
+                        <option value="AM" {% if agencia.uf == 'AM' %}selected{% endif %}>AM</option>
+                        <option value="BA" {% if agencia.uf == 'BA' %}selected{% endif %}>BA</option>
+                        <option value="CE" {% if agencia.uf == 'CE' %}selected{% endif %}>CE</option>
+                        <option value="DF" {% if agencia.uf == 'DF' %}selected{% endif %}>DF</option>
+                        <option value="ES" {% if agencia.uf == 'ES' %}selected{% endif %}>ES</option>
+                        <option value="GO" {% if agencia.uf == 'GO' %}selected{% endif %}>GO</option>
+                        <option value="MA" {% if agencia.uf == 'MA' %}selected{% endif %}>MA</option>
+                        <option value="MT" {% if agencia.uf == 'MT' %}selected{% endif %}>MT</option>
+                        <option value="MS" {% if agencia.uf == 'MS' %}selected{% endif %}>MS</option>
+                        <option value="MG" {% if agencia.uf == 'MG' %}selected{% endif %}>MG</option>
+                        <option value="PA" {% if agencia.uf == 'PA' %}selected{% endif %}>PA</option>
+                        <option value="PB" {% if agencia.uf == 'PB' %}selected{% endif %}>PB</option>
+                        <option value="PR" {% if agencia.uf == 'PR' %}selected{% endif %}>PR</option>
+                        <option value="PE" {% if agencia.uf == 'PE' %}selected{% endif %}>PE</option>
+                        <option value="PI" {% if agencia.uf == 'PI' %}selected{% endif %}>PI</option>
+                        <option value="RJ" {% if agencia.uf == 'RJ' %}selected{% endif %}>RJ</option>
+                        <option value="RN" {% if agencia.uf == 'RN' %}selected{% endif %}>RN</option>
+                        <option value="RS" {% if agencia.uf == 'RS' %}selected{% endif %}>RS</option>
+                        <option value="RO" {% if agencia.uf == 'RO' %}selected{% endif %}>RO</option>
+                        <option value="RR" {% if agencia.uf == 'RR' %}selected{% endif %}>RR</option>
+                        <option value="SC" {% if agencia.uf == 'SC' %}selected{% endif %}>SC</option>
+                        <option value="SP" {% if agencia.uf == 'SP' %}selected{% endif %}>SP</option>
+                        <option value="SE" {% if agencia.uf == 'SE' %}selected{% endif %}>SE</option>
+                        <option value="TO" {% if agencia.uf == 'TO' %}selected{% endif %}>TO</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Salvar Alterações
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="window.location.href='{{ url_for('views.agencias') }}'">
+                    <i class="fas fa-times"></i> Cancelar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

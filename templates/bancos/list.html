@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+
+{% block title %}Bancos - Abertura de Contas{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <div class="page-header">
+        <h1><i class="fas fa-university"></i> Bancos</h1>
+        <a href="{{ url_for('views.criar_banco') }}" class="btn btn-success">
+            <i class="fas fa-plus"></i> Novo Banco
+        </a>
+    </div>
+
+    <div class="content-card">
+        {% if bancos %}
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        
+                        <th>Nome</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for banco in bancos %}
+                    <tr>
+                        
+                        <td>{{ banco.nome }}</td>
+                        <td>
+                            <div class="action-buttons">
+                                <a href="{{ url_for('views.editar_banco', id_banco=banco.id_banco) }}" class="btn btn-sm btn-warning">
+                                    <i class="fas fa-edit"></i> Editar
+                                </a>
+                                <form method="POST" action="{{ url_for('views.excluir_banco', id_banco=banco.id_banco) }}" style="display: inline;" onsubmit="return confirm('Tem certeza que deseja excluir este banco?')">
+                                    <button type="submit" class="btn btn-sm btn-danger">
+                                        <i class="fas fa-trash"></i> Excluir
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-university fa-3x"></i>
+            <h3>Nenhum banco cadastrado</h3>
+            <p>Comece adicionando o primeiro banco ao sistema.</p>
+            <a href="{{ url_for('views.criar_banco') }}" class="btn btn-success">
+                <i class="fas fa-plus"></i> Criar Primeiro Banco
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

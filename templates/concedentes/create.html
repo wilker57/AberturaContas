@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+
+{% block title %}Criar Concedente - Abertura de Contas{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <div class="page-header">
+        <h1><i class="fas fa-plus"></i> Criar Concedente</h1>
+        <button type="button" class="btn btn-secondary" onclick="window.location.href='{{ url_for('views.concedentes') }}'">
+            <i class="fas fa-arrow-left"></i> Voltar
+        </button>
+    </div>
+
+    <div class="content-card">
+        <form method="POST" class="form-container">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="codigo_secretaria">Código da Secretaria:</label>
+                    <input type="text" id="codigo_secretaria" name="codigo_secretaria" required class="form-control" placeholder="Ex: 001">
+                </div>
+
+                <div class="form-group">
+                    <label for="sigla">Sigla:</label>
+                    <input type="text" id="sigla" name="sigla" required class="form-control" placeholder="Ex: SEDF" maxlength="10">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="nome">Nome do Concedente:</label>
+                <input type="text" id="nome" name="nome" required class="form-control" placeholder="Ex: Secretaria de Estado de Educação do Distrito Federal">
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-success">
+                    <i class="fas fa-save"></i> Salvar
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="window.location.href='{{ url_for('views.concedentes') }}'">
+                    <i class="fas fa-times"></i> Cancelar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
