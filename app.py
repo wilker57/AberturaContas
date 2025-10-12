@@ -24,17 +24,17 @@ def create_app():
     try:
         from flask_migrate import Migrate
         migrate = Migrate(app, db)
-        print("✅ Flask-Migrate configurado!")
+        print(" Flask-Migrate configurado!")
     except ImportError:
-        print("⚠️ Flask-Migrate não disponível - usando db.create_all()")
+        print(" Flask-Migrate não disponível - usando db.create_all()")
     
     # Registra blueprints/rotas
     try:
         from produto.views import views_bp
         app.register_blueprint(views_bp)
-        print("✅ Views registradas com sucesso!")
+        print(" Views registradas com sucesso!")
     except ImportError as e:
-        print(f"⚠️ Erro ao importar views: {e}")
+        print(f" Erro ao importar views: {e}")
         # Fallback: criar rotas básicas se views não funcionar
         @app.route('/')
         def index():

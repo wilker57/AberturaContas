@@ -116,6 +116,9 @@ def login():
 
 @views_bp.route('/registrar', methods=['GET', 'POST'])
 def registrar():
+    print(f"DEBUG - Método da requisição: {request.method}")
+    print(f"DEBUG - Dados do formulário: {request.form}")
+    
     if request.method == 'POST':
         nome = request.form.get('nome')
         matricula = request.form.get('matricula')
@@ -125,20 +128,56 @@ def registrar():
         senha = request.form.get('senha')
         perfil_enum = request.form.get('perfil_enum', 'MONITOR')
         
+        # Debug logs
+        print(f"DEBUG - Dados recebidos:")
+        print(f"Nome: {nome}")
+        print(f"Matricula: {matricula}")
+        print(f"Email: {email}")
+        print(f"Instituicao: {instituicao}")
+        print(f"Login: {login}")
+        print(f"Senha: {'***' if senha else 'None'}")
+        print(f"Perfil: {perfil_enum}")
+        
+        # Validação básica
+        if not all([nome, matricula, email, instituicao, login, senha]):
+            print("DEBUG - Erro: Campos obrigatórios faltando")
+            flash('Todos os campos são obrigatórios!', 'error')
+            return render_template('auth/register.html')
+        
+        # Verificar se já existe usuário com mesmo login, email ou matrícula
+        check_query = """
+            SELECT COUNT(*) as count FROM usuario 
+            WHERE login = %s OR email = %s OR matricula = %s
+        """
+        existing_user = execute_query(check_query, (login, email, matricula), fetch=True)
+        print(f"DEBUG - Verificação de usuário existente: {existing_user}")
+        
+        if existing_user and existing_user[0]['count'] > 0:
+            print("DEBUG - Erro: Usuário já existe")
+            flash('Usuário com este login, email ou matrícula já existe!', 'error')
+            return render_template('auth/register.html')
+        
         senha_hash = generate_password_hash(senha)
+        print(f"DEBUG - Hash da senha gerado: {'***' if senha_hash else 'None'}")
         
         query = """
             INSERT INTO usuario (nome, matricula, email, instituicao, login, senha, perfil_enum)
             VALUES (%s, %s, %s, %s, %s, %s, %s::perfilenum)
         """
-        result = execute_query(query, (nome, matricula, email, instituicao, login, senha_hash, perfil_enum), fetch=False)
         
-        if result:
+        print(f"DEBUG - Executando query de inserção...")
+        result = execute_query(query, (nome, matricula, email, instituicao, login, senha_hash, perfil_enum), fetch=False)
+        print(f"DEBUG - Resultado da inserção: {result}")
+        
+        if result and result > 0:
+            print("DEBUG - Cadastro realizado com sucesso!")
             flash('Usuário cadastrado com sucesso!', 'success')
             return redirect(url_for('views.login'))
         else:
-            flash('Erro ao cadastrar usuário. Verifique se login, email ou matrícula já existem.', 'error')
+            print("DEBUG - Erro na inserção")
+            flash('Erro ao cadastrar usuário. Tente novamente.', 'error')
     
+    print("DEBUG - Renderizando template de registro")
     return render_template('auth/register.html')
 
 @views_bp.route('/esqueci-senha')

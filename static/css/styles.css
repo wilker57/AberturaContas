@@ -1098,3 +1098,69 @@ a.login-link:hover {
     padding: 6px 12px;
     font-size: 0.875rem;
 }
+
+/* ===========================
+   SWEETALERT2 CUSTOMIZATIONS
+   ===========================*/
+
+/* Modal de confirmação de exclusão */
+.swal-delete-popup {
+    border-radius: 12px !important;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2) !important;
+}
+
+.swal-delete-title {
+    color: var(--danger-color) !important;
+    font-weight: 600 !important;
+}
+
+/* Estilização dos botões do SweetAlert2 */
+.swal2-confirm.btn-danger {
+    background-color: var(--danger-color) !important;
+    border: none !important;
+    padding: 10px 20px !important;
+    border-radius: 6px !important;
+    font-weight: 500 !important;
+    transition: all 0.3s ease !important;
+}
+
+.swal2-confirm.btn-danger:hover {
+    background-color: #c0392b !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 8px rgba(231, 76, 60, 0.3) !important;
+}
+
+.swal2-cancel.btn-secondary {
+    background-color: var(--text-muted) !important;
+    border: none !important;
+    padding: 10px 20px !important;
+    border-radius: 6px !important;
+    font-weight: 500 !important;
+    transition: all 0.3s ease !important;
+}
+
+.swal2-cancel.btn-secondary:hover {
+    background-color: #5a6268 !important;
+    transform: translateY(-1px) !important;
+}
+
+/* Animações para o SweetAlert2 */
+.swal2-popup.animate__animated {
+    animation-duration: 0.3s !important;
+}
+
+/* Loading customizado */
+.swal2-loading {
+    color: var(--primary-color) !important;
+}
+
+/* Ícone de aviso customizado */
+.swal2-icon.swal2-warning {
+    border-color: var(--warning-color) !important;
+    color: var(--warning-color) !important;
+}
+
+.swal2-icon.swal2-warning .swal2-icon-content {
+    color: var(--warning-color) !important;
+    font-weight: 600 !important;
+}

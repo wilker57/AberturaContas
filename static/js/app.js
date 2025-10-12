@@ -1,26 +1,11 @@
-// app.js - Arquitetura Tradicional Flask
+// app.js - Flask Template Architecture
 document.addEventListener('DOMContentLoaded', function () {
-    // Auto-close flash messages after 5 seconds
-    const flashMessages = document.querySelectorAll('.flash-message');
-    flashMessages.forEach(function(message) {
-        setTimeout(function() {
-            message.style.display = 'none';
-        }, 5000);
-    });
+    // Convert Flash messages to SweetAlert2
+    convertFlashMessagesToSweetAlert();
     
-    // Close flash messages when clicking the X
-    const closeButtons = document.querySelectorAll('.flash-close');
-    closeButtons.forEach(function(button) {
-        button.addEventListener('click', function() {
-            this.parentElement.style.display = 'none';
-        });
-    });
-    
-    // Set active menu item based on current URL
     setActiveMenuItem();
-    
-    // Form validation helpers
     addFormValidation();
+    protectDeleteForms();
 });
 
 function setActiveMenuItem() {
@@ -38,14 +23,11 @@ function setActiveMenuItem() {
             (currentPath.startsWith('/contas-convenio') && href.includes('/contas_convenio'))
         ) {
             link.classList.add('active');
-        } else {
-            link.classList.remove('active');
         }
     });
 }
 
 function addFormValidation() {
-    // Add basic form validation for required fields
     const forms = document.querySelectorAll('form');
     forms.forEach(function(form) {
         form.addEventListener('submit', function(event) {
@@ -63,337 +45,55 @@ function addFormValidation() {
             
             if (!isValid) {
                 event.preventDefault();
-                showMessage('Por favor, preencha todos os campos obrigatórios.', 'error');
+                showAlert('Por favor, preencha todos os campos obrigatórios.', 'error');
             }
         });
     });
 }
 
-function showMessage(message, type = 'info') {
-    // Create a temporary flash message
-    const container = document.querySelector('.main-content');
-    if (!container) return;
-    
-    const messageDiv = document.createElement('div');
-    messageDiv.className = `flash-message flash-${type}`;
-    messageDiv.innerHTML = `
-        <i class="fas fa-${type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
-        ${message}
-        <span class="flash-close" onclick="this.parentElement.style.display='none'">&times;</span>
-    `;
-    
-    container.insertBefore(messageDiv, container.firstChild);
-    
-    // Auto-remove after 5 seconds
-    setTimeout(function() {
-        if (messageDiv.parentNode) {
-            messageDiv.parentNode.removeChild(messageDiv);
-        }
-    }, 5000);
-}
-
-// Confirmation dialogs for delete actions using SweetAlert2
-async function confirmDelete(message = 'Tem certeza que deseja excluir este item?') {
-    const result = await Swal.fire({
-        title: 'Confirmar Exclusão',
-        text: message,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#e74c3c',
-        cancelButtonColor: '#6c757d',
-        confirmButtonText: '<i class="fas fa-trash"></i> Sim, excluir!',
-        cancelButtonText: '<i class="fas fa-times"></i> Cancelar',
-        customClass: {
-            confirmButton: 'btn btn-danger',
-            cancelButton: 'btn btn-secondary'
-        },
-        buttonsStyling: false
-    });
-    return result.isConfirmed;
-}
-
-// Handle form deletion with async confirmation
-function handleDeleteConfirm(event, message) {
-    event.preventDefault();
-    const form = event.target;
-    
-    confirmDelete(message).then(confirmed => {
-        if (confirmed) {
-            form.submit();
-        }
-    });
-    
-    return false;
-}
-
-// Utility functions for form handling
-function formatCurrency(input) {
-    // Format currency inputs
-    let value = input.value.replace(/\D/g, '');
-    value = (value / 100).toFixed(2);
-    input.value = value.replace('.', ',');
-}
-
-function formatPhone(input) {
-    // Format phone inputs
-    let value = input.value.replace(/\D/g, '');
-    if (value.length >= 11) {
-        input.value = value.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
-    } else if (value.length >= 10) {
-        input.value = value.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
-    }
-}
-
-function formatCPF(input) {
-    // Format CPF inputs
-    let value = input.value.replace(/\D/g, '');
-    if (value.length <= 11) {
-        input.value = value.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
-    }
-}
-
-function formatCNPJ(input) {
-    // Format CNPJ inputs
-    let value = input.value.replace(/\D/g, '');
-    if (value.length <= 14) {
-        input.value = value.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
-    }
-}
-    });
-}
-
-// Exemplo: Salvar usuário via formulário
-function saveUsuario(event) {
-    event.preventDefault();
-    // ... pegar dados, validar, chamar backend, etc.
-}
-
-// Exemplo: Salvar/remover/editar remessa
-function salvarRemessa(event) {
-    event.preventDefault();
-    // ... pegar dados, validar, chamar backend, etc.
-}
-
-// Abrir modal
-function openModal(modalId) {
-    const modal = document.getElementById(modalId);
-    if (modal) {
-        modal.style.display = 'block';
-        document.body.style.overflow = 'hidden';
-        modal.classList.add('active');
-    }
-}
-
-// Fechar modal
-function closeModal(modalId) {
-    const modal = document.getElementById(modalId);
-    if (modal) {
-        modal.style.display = 'none';
-        document.body.style.overflow = 'auto';
-        modal.classList.remove('active');
-    }
-}
-
-// Filtrar tabela por termo (search)
-function filterTable(tableId, searchValue) {
-    const table = document.getElementById(tableId);
-    if (!table) return;
-    const tbody = table.querySelector('tbody');
-    const rows = tbody.querySelectorAll('tr');
-    const searchTerm = searchValue.toLowerCase();
-    rows.forEach(row => {
-        const cells = row.querySelectorAll('td');
-        let found = false;
-        cells.forEach(cell => {
-            if (cell.textContent.toLowerCase().includes(searchTerm)) found = true;
-        });
-        row.style.display = found ? '' : 'none';
-    });
-}
-
-// Ordenação simples para tabelas
-function sortTable(table, column, direction) {
-    const tbody = table.querySelector('tbody');
-    const rows = Array.from(tbody.querySelectorAll('tr'));
-    rows.sort((a, b) => {
-        const aVal = a.children[column].textContent.trim();
-        const bVal = b.children[column].textContent.trim();
-        if (direction === 'asc') return aVal.localeCompare(bVal);
-        else return bVal.localeCompare(aVal);
-    });
-    rows.forEach(row => tbody.appendChild(row));
-}
-
-// Função para alternar entre telas (login -> dashboard)
-function showScreen(screenId) {
-    // Ocultar todas as telas
-    document.querySelectorAll('.screen').forEach(screen => {
-        screen.classList.remove('active');
-    });
-    
-    // Mostrar a tela especificada
-    const targetScreen = document.getElementById(screenId);
-    if (targetScreen) {
-        targetScreen.classList.add('active');
-    }
-}
-
-// Função para mostrar tela de registro
-function showRegister() {
-    showScreen('register-screen');
-}
-
-// Função para mostrar tela de login
-function showLogin() {
-    showScreen('login-screen');
-}
-
-// Função para mostrar tela de esqueci a senha
-function showForgotPassword() {
-    showScreen('forgot-password-screen');
-}
-
-// Função para alternar entre páginas dentro do dashboard
-function showPage(pageId) {
-    // Ocultar todas as páginas
-    document.querySelectorAll('.page').forEach(page => {
-        page.classList.remove('active');
-    });
-    
-    // Mostrar a página especificada
-    const targetPage = document.getElementById(pageId);
-    if (targetPage) {
-        targetPage.classList.add('active');
-    }
-}
-
-// Função de login com integração à API
-function handleLogin(event) {
-    event.preventDefault();
-    
-    const username = document.getElementById('login')?.value;
-    const password = document.getElementById('senha')?.value;
-    
-    if (!username || !password) {
-        showAlert('login-alert', 'Por favor, preencha usuário e senha', 'error');
-        return;
-    }
-    
-    // Fazer requisição AJAX para o backend
-    const formData = new FormData();
-    formData.append('login', username);
-    formData.append('senha', password);
-    
-    fetch('/login', {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Login bem-sucedido, mostrar dashboard
-            showScreen('main-screen');
-            showPage('dashboard-page');
-            loadDashboardData();
-        } else {
-            // Erro no login
-            showAlert('login-alert', data.message || 'Erro ao fazer login', 'error');
-        }
-    })
-    .catch(error => {
-        console.error('Erro:', error);
-        showAlert('login-alert', 'Erro de conexão com o servidor', 'error');
-    });
-}
-
-// Função de registro simulada (deve ser implementada com backend)
-function handleRegister(event) {
-    event.preventDefault();
-    
-    const nome = document.getElementById('register-nome')?.value;
-    const matricula = document.getElementById('register-matricula')?.value;
-    const email = document.getElementById('register-email')?.value;
-    const instituicao = document.getElementById('register-instituicao')?.value;
-    const login = document.getElementById('register-login')?.value;
-    const senha = document.getElementById('register-senha')?.value;
-    const confirmSenha = document.getElementById('register-confirm-senha')?.value;
-    
-    // Validações básicas
-    if (!nome || !matricula || !email || !instituicao || !login || !senha || !confirmSenha) {
-        showAlert('register-alert', 'Por favor, preencha todos os campos', 'error');
-        return;
-    }
-    
-    if (senha !== confirmSenha) {
-        showAlert('register-alert', 'As senhas não coincidem', 'error');
-        return;
-    }
-    
-    // Simulação de cadastro bem-sucedido
-    showAlert('register-alert', 'Cadastro realizado com sucesso! Redirecionando para login...', 'success');
-    
-    // Após 2 segundos, voltar para tela de login
-    setTimeout(() => {
-        showLogin();
-    }, 2000);
-}
-
-// Função para carregar dados do dashboard
-function loadDashboardData() {
-    fetch('/api/dashboard-stats')
-    .then(response => response.json())
-    .then(data => {
-        if (data.error) {
-            console.error('Erro ao carregar dados do dashboard:', data.error);
-            return;
+// Convert Flash messages to SweetAlert2
+function convertFlashMessagesToSweetAlert() {
+    const flashMessages = document.querySelectorAll('.flash-message');
+    flashMessages.forEach(function(message) {
+        const messageText = message.textContent.replace('×', '').trim();
+        let category = 'info';
+        
+        // Determinar categoria pela classe CSS
+        if (message.classList.contains('flash-success')) {
+            category = 'success';
+        } else if (message.classList.contains('flash-error')) {
+            category = 'error';
+        } else if (message.classList.contains('flash-warning')) {
+            category = 'warning';
         }
         
-        // Atualizar elementos do dashboard com os dados
-        const elements = {
-            'total-usuarios': data.total_usuarios || 0,
-            'total-bancos': data.total_bancos || 0,
-            'total-agencias': data.total_agencias || 0,
-            'total-remessas': data.total_remessas || 0,
-            'total-concedentes': data.total_concedentes || 0,
-            'total-contas': data.total_contas || 0
-        };
+        // Ocultar a mensagem flash original
+        message.style.display = 'none';
         
-        Object.keys(elements).forEach(id => {
-            const element = document.getElementById(id);
-            if (element) {
-                element.textContent = elements[id];
-            }
-        });
-    })
-    .catch(error => {
-        console.error('Erro ao carregar dados do dashboard:', error);
+        // Personalizar mensagem para exclusões bem-sucedidas
+        if (category === 'success' && messageText.includes('excluído')) {
+            Swal.fire({
+                title: '✅ Excluído com sucesso!',
+                text: messageText,
+                icon: 'success',
+                confirmButtonColor: '#27ae60',
+                confirmButtonText: '<i class="fas fa-check"></i> OK',
+                customClass: {
+                    confirmButton: 'btn btn-success'
+                },
+                buttonsStyling: false,
+                timer: 3000,
+                timerProgressBar: true
+            });
+        } else {
+            // Exibir usando SweetAlert2 padrão para outras mensagens
+            showAlert(messageText, category);
+        }
     });
 }
 
-// Carregar dados quando a página estiver pronta
-document.addEventListener('DOMContentLoaded', function() {
-    // Verificar se usuário está logado e carregar dados se necessário
-    fetch('/api/user-info')
-    .then(response => response.json())
-    .then(data => {
-        if (!data.error) {
-            // Usuário está logado, mostrar dashboard
-            showScreen('main-screen');
-            showPage('dashboard-page');
-            loadDashboardData();
-        } else {
-            // Usuário não está logado, mostrar tela de login
-            showScreen('login-screen');
-        }
-    })
-    .catch(error => {
-        console.error('Erro ao verificar autenticação:', error);
-        showScreen('login-screen');
-    });
-});
-
-// Função para mostrar alertas usando SweetAlert2
-function showAlert(alertId, message, type = 'info') {
+// SweetAlert2 for alerts
+function showAlert(message, type = 'info') {
     let icon, title;
     
     switch (type) {
@@ -409,11 +109,9 @@ function showAlert(alertId, message, type = 'info') {
             icon = 'warning';
             title = 'Atenção';
             break;
-        case 'info':
         default:
             icon = 'info';
             title = 'Informação';
-            break;
     }
     
     Swal.fire({
@@ -431,12 +129,186 @@ function showAlert(alertId, message, type = 'info') {
     });
 }
 
-// Função de logout
-function logoutUser() {
-    // Limpar dados do usuário
-    currentUser = null;
-    authToken = null;
+// SweetAlert2 for delete confirmations
+async function confirmDelete(message = 'Tem certeza que deseja excluir este item?') {
+    const result = await Swal.fire({
+        title: '⚠️ Confirmar Exclusão',
+        html: `<p style="font-size: 16px; margin: 10px 0;">${message}</p><p style="color: #dc3545; font-weight: bold;">Esta ação não pode ser desfeita!</p>`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: '<i class="fas fa-trash"></i> Sim, excluir!',
+        cancelButtonText: '<i class="fas fa-times"></i> Cancelar',
+        customClass: {
+            confirmButton: 'btn btn-danger',
+            cancelButton: 'btn btn-secondary',
+            popup: 'swal-delete-popup',
+            title: 'swal-delete-title'
+        },
+        buttonsStyling: false,
+        focusCancel: true,
+        reverseButtons: true,
+        showClass: {
+            popup: 'animate__animated animate__fadeInDown animate__faster'
+        },
+        hideClass: {
+            popup: 'animate__animated animate__fadeOutUp animate__faster'
+        }
+    });
+    return result.isConfirmed;
+}
+
+function handleDeleteConfirm(event, message) {
+    event.preventDefault();
+    const form = event.target;
     
-    // Voltar para tela de login
-    showScreen('login-screen');
+    confirmDelete(message).then(confirmed => {
+        if (confirmed) {
+            // Exibir loading durante o processo de exclusão
+            Swal.fire({
+                title: 'Excluindo...',
+                html: 'Por favor aguarde',
+                icon: 'info',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showConfirmButton: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+            form.submit();
+        }
+    });
+    
+    return false;
+}
+
+// Format utilities
+function formatCurrency(input) {
+    let value = input.value.replace(/\D/g, '');
+    value = (value / 100).toFixed(2);
+    input.value = value.replace('.', ',');
+}
+
+function formatPhone(input) {
+    let value = input.value.replace(/\D/g, '');
+    if (value.length >= 11) {
+        input.value = value.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+    } else if (value.length >= 10) {
+        input.value = value.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
+    }
+}
+
+function formatCPF(input) {
+    let value = input.value.replace(/\D/g, '');
+    if (value.length <= 11) {
+        input.value = value.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+    }
+}
+
+function formatCNPJ(input) {
+    let value = input.value.replace(/\D/g, '');
+    if (value.length <= 14) {
+        input.value = value.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
+    }
+}
+
+// Modal controls
+function openModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.style.display = 'block';
+        document.body.style.overflow = 'hidden';
+        modal.classList.add('active');
+    }
+}
+
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+        modal.classList.remove('active');
+    }
+}
+
+// Table utilities
+function filterTable(tableId, searchValue) {
+    const table = document.getElementById(tableId);
+    if (!table) return;
+    
+    const tbody = table.querySelector('tbody');
+    const rows = tbody.querySelectorAll('tr');
+    const searchTerm = searchValue.toLowerCase();
+    
+    rows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        let found = false;
+        cells.forEach(cell => {
+            if (cell.textContent.toLowerCase().includes(searchTerm)) {
+                found = true;
+            }
+        });
+        row.style.display = found ? '' : 'none';
+    });
+}
+
+function sortTable(table, column, direction) {
+    const tbody = table.querySelector('tbody');
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    
+    rows.sort((a, b) => {
+        const aVal = a.children[column].textContent.trim();
+        const bVal = b.children[column].textContent.trim();
+        return direction === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+    });
+    
+    rows.forEach(row => tbody.appendChild(row));
+}
+
+// Proteção adicional para formulários de exclusão
+function protectDeleteForms() {
+    // Buscar todos os formulários que fazem POST para rotas de exclusão
+    const deleteForms = document.querySelectorAll('form[action*="excluir"]');
+    
+    deleteForms.forEach(form => {
+        // Verificar se já tem o onsubmit configurado
+        if (!form.hasAttribute('onsubmit')) {
+            form.addEventListener('submit', function(event) {
+                event.preventDefault();
+                
+                // Determinar o tipo de item baseado na URL
+                const action = form.getAttribute('action');
+                let itemType = 'este item';
+                
+                if (action.includes('usuario')) itemType = 'este usuário';
+                else if (action.includes('banco')) itemType = 'este banco';
+                else if (action.includes('agencia')) itemType = 'esta agência';
+                else if (action.includes('concedente')) itemType = 'este concedente';
+                else if (action.includes('remessa')) itemType = 'esta remessa';
+                else if (action.includes('conta_convenio')) itemType = 'esta conta convênio';
+                
+                const message = `Tem certeza que deseja excluir ${itemType}?`;
+                
+                confirmDelete(message).then(confirmed => {
+                    if (confirmed) {
+                        // Exibir loading durante o processo de exclusão
+                        Swal.fire({
+                            title: 'Excluindo...',
+                            html: 'Por favor aguarde',
+                            icon: 'info',
+                            allowOutsideClick: false,
+                            allowEscapeKey: false,
+                            showConfirmButton: false,
+                            didOpen: () => {
+                                Swal.showLoading();
+                            }
+                        });
+                        form.submit();
+                    }
+                });
+            });
+        }
+    });
 }

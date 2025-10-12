@@ -7,9 +7,9 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 try:
     from config import get_conn, close_connection
-    print("📦 Módulo config importado com sucesso!")
+    print(" Módulo config importado com sucesso!")
 except ImportError as e:
-    print(f"❌ Erro ao importar config: {e}")
+    print(f" Erro ao importar config: {e}")
     sys.exit(1)
 
 def test_database_connection():
@@ -24,13 +24,13 @@ def test_database_connection():
         conn = get_conn()
         
         if conn:
-            print("✅ Conexão estabelecida com sucesso!")
+            print(" Conexão estabelecida com sucesso!")
             
             # Testa se consegue executar uma query simples
             cursor = conn.cursor()
             cursor.execute("SELECT version();")
             version = cursor.fetchone()
-            print(f"📊 Versão do PostgreSQL: {version[0]}")
+            print(f" Versão do PostgreSQL: {version[0]}")
             
             # Testa se o banco existe e está acessível
             cursor.execute("SELECT current_database();")
@@ -45,11 +45,11 @@ def test_database_connection():
             print("✅ Teste de conexão concluído com sucesso!")
             
         else:
-            print("❌ Falha ao estabelecer conexão!")
+            print(" Falha ao estabelecer conexão!")
             return False
             
     except Exception as e:
-        print(f"❌ Erro durante o teste: {e}")
+        print(f" Erro durante o teste: {e}")
         return False
     
     print("=" * 50)
