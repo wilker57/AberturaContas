@@ -335,10 +335,10 @@ def agencias():
         return redirect(url_for('views.login'))
     
     query = """
-        SELECT a.*, b.nome as banco_nome 
-        FROM agencia a 
-        JOIN banco b ON a.id_banco = b.id_banco
-        ORDER BY a.nome_agencia
+        SELECT *,
+        (SELECT nome FROM banco WHERE banco.id_banco = agencia.id_banco) AS banco_nome
+        FROM agencia
+        ORDER BY a.nome_agencia;
     """
     agencias_list = execute_query(query)
     
@@ -406,10 +406,10 @@ def editar_agencia(id_agencia):
     
     # GET - Buscar dados da agência para edição
     query = """
-        SELECT a.*, b.nome as banco_nome 
-        FROM agencia a 
-        JOIN banco b ON a.id_banco = b.id_banco
-        WHERE a.id_agencia = %s
+        SELECT *,
+        (SELECT nome FROM banco WHERE banco.id_banco = agencia.id_banco) AS banco_nome
+        FROM agencia
+        WHERE id_agencia = %s;
     """
     agencia = execute_query(query, (id_agencia,))
     
@@ -642,14 +642,14 @@ def remessas():
         return redirect(url_for('views.login'))
     
     query = """
-        SELECT r.*, a.nome_agencia, c.nome as concedente_nome, u.nome as usuario_nome, b.nome as banco_nome
-        FROM remessa r
-        LEFT JOIN agencia a ON r.id_banco = a.id_banco
-        LEFT JOIN banco b ON r.id_banco = b.id_banco
-        JOIN concedente c ON r.id_concedente = c.id_concedente
-        JOIN usuario u ON r.id_usuario = u.id_usuario
-        ORDER BY r.dt_remessa DESC
-    """
+        SELECT *,
+        (SELECT nome_agencia FROM agencia WHERE agencia.id_banco = remessa.id_banco) AS nome_agencia,
+        (SELECT nome FROM concedente WHERE concedente.id_concedente = remessa.id_concedente) AS concedente_nome,
+        (SELECT nome FROM usuario WHERE usuario.id_usuario = remessa.id_usuario) AS usuario_nome,
+        (SELECT nome FROM banco WHERE banco.id_banco = remessa.id_banco) AS banco_nome
+        FROM remessa
+        ORDER BY dt_remessa DESC;
+    """ 
     remessas_list = execute_query(query)
     
     return render_template('remessas/list.html', remessas=remessas_list)
@@ -728,11 +728,11 @@ def editar_remessa(id_remessa):
     
     # GET - Buscar dados da remessa para edição
     query = """
-        SELECT r.*, c.nome as concedente_nome, b.nome as banco_nome
-        FROM remessa r
-        JOIN concedente c ON r.id_concedente = c.id_concedente
-        LEFT JOIN banco b ON r.id_banco = b.id_banco
-        WHERE r.id_remessa = %s
+        SELECT *,
+        (SELECT nome FROM concedente WHERE concedente.id_concedente = remessa.id_concedente) AS concedente_nome,
+        (SELECT nome FROM banco WHERE banco.id_banco = remessa.id_banco) AS banco_nome
+        FROM remessa 
+        WHERE id_remessa = %s;
     """
     remessa = execute_query(query, (id_remessa,))
     
@@ -774,12 +774,13 @@ def contas_convenio():
         return redirect(url_for('views.login'))
     
     query = """
-        SELECT cc.*, r.num_processo, r.nome_proponente, a.nome_agencia, b.nome as banco_nome
-        FROM conta_convenio cc
-        JOIN remessa r ON cc.id_remessa = r.id_remessa
-        JOIN agencia a ON cc.id_agencia = a.id_agencia
-        JOIN banco b ON a.id_banco = b.id_banco
-        ORDER BY cc.dt_abertura DESC
+        SELECT *,
+        (SELECT num_processo FROM remessa WHERE remessa.id_remessa = conta_convenio.id_remessa) AS num_processo,
+        (SELECT nome_proponente FROM remessa WHERE remessa.id_remessa = conta_convenio.id_remessa) AS nome_proponente,
+        (SELECT nome_agencia FROM agencia WHERE agencia.id_agencia = conta_convenio.id_agencia) AS nome_agencia,
+        (SELECT nome FROM banco WHERE banco.id_banco = (SELECT id_banco FROM agencia WHERE agencia.id_agencia = conta_convenio.id_agencia)) AS banco_nome
+        FROM conta_convenio
+        ORDER BY dt_abertura DESC;
     """
     contas_list = execute_query(query)
     
@@ -814,10 +815,10 @@ def criar_conta_convenio():
     remessas = execute_query(query_remessas)
     
     query_agencias = """
-        SELECT a.*, b.nome as banco_nome 
-        FROM agencia a 
-        JOIN banco b ON a.id_banco = b.id_banco
-        ORDER BY b.nome, a.nome_agencia
+        SELECT *,
+        (SELECT nome FROM banco WHERE banco.id_banco = agencia.id_banco) AS banco_nome
+        FROM agencia
+        ORDER BY nome_agencia;
     """
     agencias = execute_query(query_agencias)
     
@@ -850,11 +851,11 @@ def editar_conta_convenio(id_conta_convenio):
     
     # GET - Buscar dados da conta para edição
     query = """
-        SELECT cc.*, r.num_processo, a.nome_agencia, b.nome as banco_nome
+        SELECT *,
+        (SELECT num_processo FROM remessa WHERE remessa.id_remessa = cc.id_remessa) AS num_processo,
+        (SELECT nome_agencia FROM agencia WHERE agencia.id_agencia = cc.id_agencia) AS nome_agencia,
+        (SELECT nome FROM banco WHERE banco.id_banco = (SELECT id_banco FROM agencia WHERE agencia.id_agencia = cc.id_agencia) AS banco_nome
         FROM conta_convenio cc
-        JOIN remessa r ON cc.id_remessa = r.id_remessa
-        JOIN agencia a ON cc.id_agencia = a.id_agencia
-        JOIN banco b ON a.id_banco = b.id_banco
         WHERE cc.id_conta_convenio = %s
     """
     conta = execute_query(query, (id_conta_convenio,))
@@ -864,10 +865,10 @@ def editar_conta_convenio(id_conta_convenio):
     remessas = execute_query(query_remessas)
     
     query_agencias = """
-        SELECT a.*, b.nome as banco_nome 
-        FROM agencia a 
-        JOIN banco b ON a.id_banco = b.id_banco
-        ORDER BY b.nome, a.nome_agencia
+        SELECT *,
+        (SELECT nome FROM banco WHERE banco.id_banco = agencia.id_banco) AS banco_nome
+        FROM agencia
+        ORDER by nome_agencia;
     """
     agencias = execute_query(query_agencias)
     
