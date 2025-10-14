@@ -1,7 +1,87 @@
-// app.js - Flask Template Architecture
+// app.js - Flask Template Architecture with SweetAlert2 only
+
+// Tornar showAlert global para ser acessível de qualquer lugar
+window.showAlert = function(message, type = 'info') {
+    // Verificar se SweetAlert2 está disponível
+    if (typeof Swal === 'undefined') {
+        console.error('SweetAlert2 não está carregado!');
+        alert(message); // Fallback para alert nativo
+        return;
+    }
+
+    let icon, title;
+    
+    switch (type) {
+        case 'success':
+            icon = 'success';
+            title = 'Sucesso';
+            break;
+        case 'error':
+            icon = 'error';
+            title = 'Erro';
+            break;
+        case 'warning':
+            icon = 'warning';
+            title = 'Atenção';
+            break;
+        default:
+            icon = 'info';
+            title = 'Informação';
+    }
+    
+    Swal.fire({
+        title: title,
+        text: message,
+        icon: icon,
+        confirmButtonColor: '#3498db',
+        confirmButtonText: '<i class="fas fa-check"></i> OK',
+        customClass: {
+            confirmButton: 'btn btn-primary'
+        },
+        buttonsStyling: false,
+        timer: type === 'success' ? 3000 : undefined,
+        timerProgressBar: type === 'success'
+    });
+};
+
+// Função global para confirmação de exclusão
+window.confirmDelete = async function(message = 'Tem certeza que deseja excluir este item?') {
+    console.log('confirmDelete chamada com mensagem:', message);
+    
+    // Verificar se SweetAlert2 está disponível
+    if (typeof Swal === 'undefined') {
+        console.error('SweetAlert2 não está carregado!');
+        return confirm(message); // Fallback para confirm nativo
+    }
+    
+    try {
+        const result = await Swal.fire({
+            title: 'Confirmar Exclusão',
+            text: message + ' Esta ação não pode ser desfeita!',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Sim, excluir!',
+            cancelButtonText: 'Cancelar',
+            focusCancel: true,
+            reverseButtons: true,
+            allowOutsideClick: false,
+            allowEscapeKey: true
+        });
+        
+        console.log('Resultado do SweetAlert:', result);
+        return result.isConfirmed;
+    } catch (error) {
+        console.error('Erro no Swal.fire:', error);
+        return confirm(message); // Fallback para confirm nativo
+    }
+};
+
 document.addEventListener('DOMContentLoaded', function () {
-    // Convert Flash messages to SweetAlert2
-    convertFlashMessagesToSweetAlert();
+    console.log('DOM carregado');
+    console.log('SweetAlert2 disponível?', typeof Swal !== 'undefined');
+    console.log('showAlert function available?', typeof window.showAlert === 'function');
     
     setActiveMenuItem();
     addFormValidation();
@@ -49,139 +129,6 @@ function addFormValidation() {
             }
         });
     });
-}
-
-// Convert Flash messages to SweetAlert2
-function convertFlashMessagesToSweetAlert() {
-    const flashMessages = document.querySelectorAll('.flash-message');
-    flashMessages.forEach(function(message) {
-        const messageText = message.textContent.replace('×', '').trim();
-        let category = 'info';
-        
-        // Determinar categoria pela classe CSS
-        if (message.classList.contains('flash-success')) {
-            category = 'success';
-        } else if (message.classList.contains('flash-error')) {
-            category = 'error';
-        } else if (message.classList.contains('flash-warning')) {
-            category = 'warning';
-        }
-        
-        // Ocultar a mensagem flash original
-        message.style.display = 'none';
-        
-        // Personalizar mensagem para exclusões bem-sucedidas
-        if (category === 'success' && messageText.includes('excluído')) {
-            Swal.fire({
-                title: '✅ Excluído com sucesso!',
-                text: messageText,
-                icon: 'success',
-                confirmButtonColor: '#27ae60',
-                confirmButtonText: '<i class="fas fa-check"></i> OK',
-                customClass: {
-                    confirmButton: 'btn btn-success'
-                },
-                buttonsStyling: false,
-                timer: 3000,
-                timerProgressBar: true
-            });
-        } else {
-            // Exibir usando SweetAlert2 padrão para outras mensagens
-            showAlert(messageText, category);
-        }
-    });
-}
-
-// SweetAlert2 for alerts
-function showAlert(message, type = 'info') {
-    let icon, title;
-    
-    switch (type) {
-        case 'success':
-            icon = 'success';
-            title = 'Sucesso';
-            break;
-        case 'error':
-            icon = 'error';
-            title = 'Erro';
-            break;
-        case 'warning':
-            icon = 'warning';
-            title = 'Atenção';
-            break;
-        default:
-            icon = 'info';
-            title = 'Informação';
-    }
-    
-    Swal.fire({
-        title: title,
-        text: message,
-        icon: icon,
-        confirmButtonColor: '#3498db',
-        confirmButtonText: '<i class="fas fa-check"></i> OK',
-        customClass: {
-            confirmButton: 'btn btn-primary'
-        },
-        buttonsStyling: false,
-        timer: type === 'success' ? 3000 : undefined,
-        timerProgressBar: type === 'success'
-    });
-}
-
-// SweetAlert2 for delete confirmations
-async function confirmDelete(message = 'Tem certeza que deseja excluir este item?') {
-    const result = await Swal.fire({
-        title: '⚠️ Confirmar Exclusão',
-        html: `<p style="font-size: 16px; margin: 10px 0;">${message}</p><p style="color: #dc3545; font-weight: bold;">Esta ação não pode ser desfeita!</p>`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#dc3545',
-        cancelButtonColor: '#6c757d',
-        confirmButtonText: '<i class="fas fa-trash"></i> Sim, excluir!',
-        cancelButtonText: '<i class="fas fa-times"></i> Cancelar',
-        customClass: {
-            confirmButton: 'btn btn-danger',
-            cancelButton: 'btn btn-secondary',
-            popup: 'swal-delete-popup',
-            title: 'swal-delete-title'
-        },
-        buttonsStyling: false,
-        focusCancel: true,
-        reverseButtons: true,
-        showClass: {
-            popup: 'animate__animated animate__fadeInDown animate__faster'
-        },
-        hideClass: {
-            popup: 'animate__animated animate__fadeOutUp animate__faster'
-        }
-    });
-    return result.isConfirmed;
-}
-
-function handleDeleteConfirm(event, message) {
-    event.preventDefault();
-    const form = event.target;
-    
-    confirmDelete(message).then(confirmed => {
-        if (confirmed) {
-            // Exibir loading durante o processo de exclusão
-            Swal.fire({
-                title: 'Excluindo...',
-                html: 'Por favor aguarde',
-                icon: 'info',
-                allowOutsideClick: false,
-                allowEscapeKey: false,
-                showConfirmButton: false,
-                didOpen: () => {
-                    Swal.showLoading();
-                }
-            });
-            form.submit();
-        }
-    });
-    
-    return false;
 }
 
 // Format utilities
@@ -269,17 +216,26 @@ function sortTable(table, column, direction) {
 
 // Proteção adicional para formulários de exclusão
 function protectDeleteForms() {
-    // Buscar todos os formulários que fazem POST para rotas de exclusão
-    const deleteForms = document.querySelectorAll('form[action*="excluir"]');
+    console.log('Configurando proteção para formulários de exclusão...');
     
-    deleteForms.forEach(form => {
-        // Verificar se já tem o onsubmit configurado
-        if (!form.hasAttribute('onsubmit')) {
-            form.addEventListener('submit', function(event) {
-                event.preventDefault();
-                
+    // Buscar todos os formulários que fazem POST para rotas de exclusão OU têm a classe delete-form
+    const deleteForms = document.querySelectorAll('form[action*="excluir"], .delete-form');
+    
+    console.log('Encontrados', deleteForms.length, 'formulários de exclusão');
+    
+    deleteForms.forEach((form, index) => {
+        console.log(`Configurando formulário ${index + 1}:`, form.action || 'sem action');
+        
+        form.addEventListener('submit', function(event) {
+            event.preventDefault();
+            console.log('Formulário de exclusão submetido, interceptando...');
+            
+            // Pegar a mensagem do data-attribute ou determinar baseado na URL
+            let message = form.getAttribute('data-message');
+            
+            if (!message) {
                 // Determinar o tipo de item baseado na URL
-                const action = form.getAttribute('action');
+                const action = form.getAttribute('action') || '';
                 let itemType = 'este item';
                 
                 if (action.includes('usuario')) itemType = 'este usuário';
@@ -289,26 +245,35 @@ function protectDeleteForms() {
                 else if (action.includes('remessa')) itemType = 'esta remessa';
                 else if (action.includes('conta_convenio')) itemType = 'esta conta convênio';
                 
-                const message = `Tem certeza que deseja excluir ${itemType}?`;
-                
-                confirmDelete(message).then(confirmed => {
-                    if (confirmed) {
-                        // Exibir loading durante o processo de exclusão
-                        Swal.fire({
-                            title: 'Excluindo...',
-                            html: 'Por favor aguarde',
-                            icon: 'info',
-                            allowOutsideClick: false,
-                            allowEscapeKey: false,
-                            showConfirmButton: false,
-                            didOpen: () => {
-                                Swal.showLoading();
-                            }
-                        });
-                        form.submit();
-                    }
-                });
+                message = `Tem certeza que deseja excluir ${itemType}?`;
+            }
+            
+            console.log('Chamando confirmDelete com mensagem:', message);
+            
+            window.confirmDelete(message).then(confirmed => {
+                console.log('Resultado da confirmação:', confirmed);
+                if (confirmed) {
+                    console.log('Confirmado! Enviando formulário...');
+                    // Exibir loading durante o processo de exclusão
+                    Swal.fire({
+                        title: 'Excluindo...',
+                        html: 'Por favor aguarde',
+                        icon: 'info',
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                        showConfirmButton: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+                    form.submit();
+                } else {
+                    console.log('Cancelado pelo usuário');
+                }
+            }).catch(error => {
+                console.error('Erro na confirmação:', error);
+                alert('Erro ao exibir confirmação: ' + error.message);
             });
-        }
+        });
     });
 }

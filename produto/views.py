@@ -69,7 +69,10 @@ def execute_query(query, params=None, fetch=True):
             return cursor.rowcount
     except Exception as e:
         conn.rollback()
-        print(f"Erro ao executar query: {e}")
+        print(f"ERRO SQL - Query: {query}")
+        print(f"ERRO SQL - Params: {params}")
+        print(f"ERRO SQL - Detalhes: {e}")
+        print(f"ERRO SQL - Tipo: {type(e).__name__}")
         return None
     finally:
         cursor.close()
@@ -236,11 +239,11 @@ def dashboard():
     result = execute_query("SELECT COUNT(*) as total FROM remessa WHERE situacao = 'Enviado'")
     remessas['enviado'] = result[0]['total'] if result else 0
     
-    result = execute_query("SELECT COUNT(*) as total FROM remessa WHERE situacao = 'Aguardando Retorno'")
+    result = execute_query("SELECT COUNT(*) as total FROM remessa WHERE situacao = 'Aguardando retorno'")
     remessas['aguardando'] = result[0]['total'] if result else 0
     
-    result = execute_query("SELECT COUNT(*) as total FROM remessa WHERE situacao = 'Aprovado'")
-    remessas['aprovado'] = result[0]['total'] if result else 0
+    result = execute_query("SELECT COUNT(*) as total FROM remessa WHERE situacao = 'Pendente de envio'")
+    remessas['pendente'] = result[0]['total'] if result else 0
     
     result = execute_query("SELECT COUNT(*) as total FROM remessa WHERE situacao = 'Conta Aberta'")
     remessas['aberta'] = result[0]['total'] if result else 0
@@ -338,7 +341,7 @@ def agencias():
         SELECT *,
         (SELECT nome FROM banco WHERE banco.id_banco = agencia.id_banco) AS banco_nome
         FROM agencia
-        ORDER BY a.nome_agencia;
+        ORDER BY nome_agencia;
     """
     agencias_list = execute_query(query)
     
@@ -643,7 +646,6 @@ def remessas():
     
     query = """
         SELECT *,
-        (SELECT nome_agencia FROM agencia WHERE agencia.id_banco = remessa.id_banco) AS nome_agencia,
         (SELECT nome FROM concedente WHERE concedente.id_concedente = remessa.id_concedente) AS concedente_nome,
         (SELECT nome FROM usuario WHERE usuario.id_usuario = remessa.id_usuario) AS usuario_nome,
         (SELECT nome FROM banco WHERE banco.id_banco = remessa.id_banco) AS banco_nome
@@ -664,9 +666,19 @@ def criar_remessa():
         nome_proponente = request.form.get('nome_proponente')
         cpf_cnpj = request.form.get('cpf_cnpj')
         num_convenio = request.form.get('num_convenio')
-        situacao = request.form.get('situacao', 'EM_PREPARACAO')
+        situacao = request.form.get('situacao', 'Em Preparação')
         id_concedente = request.form.get('id_concedente')
         id_banco = request.form.get('id_banco')
+        
+        # Validação básica
+        if not all([num_processo, nome_proponente, cpf_cnpj, num_convenio, id_concedente]):
+            flash('Todos os campos obrigatórios devem ser preenchidos!', 'error')
+            # Buscar dados para formulário novamente
+            query_concedentes = "SELECT * FROM concedente ORDER BY nome"
+            concedentes = execute_query(query_concedentes)
+            query_bancos = "SELECT * FROM banco ORDER BY nome"
+            bancos = execute_query(query_bancos)
+            return render_template('remessas/create.html', concedentes=concedentes, bancos=bancos)
         
         # Calcular próximo num_remessa automaticamente
         query_max = "SELECT COALESCE(MAX(num_remessa), 0) + 1 as proximo_num FROM remessa"
@@ -681,7 +693,7 @@ def criar_remessa():
         result = execute_query(query, (num_processo, nome_proponente, cpf_cnpj, num_convenio, 
                                       situacao, proximo_num_remessa, id_concedente, session['user_id'], id_banco), fetch=False)
         
-        if result:
+        if result and result > 0:
             flash('Remessa criada com sucesso!', 'success')
             return redirect(url_for('views.remessas'))
         else:
@@ -854,7 +866,7 @@ def editar_conta_convenio(id_conta_convenio):
         SELECT *,
         (SELECT num_processo FROM remessa WHERE remessa.id_remessa = cc.id_remessa) AS num_processo,
         (SELECT nome_agencia FROM agencia WHERE agencia.id_agencia = cc.id_agencia) AS nome_agencia,
-        (SELECT nome FROM banco WHERE banco.id_banco = (SELECT id_banco FROM agencia WHERE agencia.id_agencia = cc.id_agencia) AS banco_nome
+        (SELECT nome FROM banco WHERE banco.id_banco = (SELECT id_banco FROM agencia WHERE agencia.id_agencia = cc.id_agencia)) AS banco_nome
         FROM conta_convenio cc
         WHERE cc.id_conta_convenio = %s
     """

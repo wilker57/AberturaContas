@@ -33,7 +33,7 @@
                                 <a href="{{ url_for('views.editar_concedente', id_concedente=concedente.id_concedente) }}" class="btn btn-sm btn-warning">
                                     <i class="fas fa-edit"></i> 
                                 </a>
-                                <form method="POST" action="{{ url_for('views.excluir_concedente', id_concedente=concedente.id_concedente) }}" style="display: inline;" onsubmit="return handleDeleteConfirm(event, 'Tem certeza que deseja excluir este concedente?')">
+                                <form method="POST" action="{{ url_for('views.excluir_concedente', id_concedente=concedente.id_concedente) }}" style="display: inline;" class="delete-form" data-message="Tem certeza que deseja excluir este concedente?">
                                     <button type="submit" class="btn btn-sm btn-danger">
                                         <i class="fas fa-trash"></i> 
                                     </button>

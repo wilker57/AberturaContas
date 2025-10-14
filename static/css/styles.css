@@ -282,39 +282,8 @@ body {
     height: auto;
 }
 
-/* Alerts */
-.alert {
-    padding: 12px 16px;
-    border-radius: var(--border-radius);
-    margin-bottom: 20px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.alert-error {
-    background: rgba(231, 76, 60, 0.1);
-    color: var(--danger-color);
-    border: 1px solid rgba(231, 76, 60, 0.2);
-}
-
-.alert-success {
-    background: rgba(39, 174, 96, 0.1);
-    color: var(--success-color);
-    border: 1px solid rgba(39, 174, 96, 0.2);
-}
-
-.alert-warning {
-    background: rgba(243, 156, 18, 0.1);
-    color: #f39c12;
-    border: 1px solid rgba(243, 156, 18, 0.2);
-}
-
-.alert-info {
-    background: rgba(52, 152, 219, 0.1);
-    color: #3498db;
-    border: 1px solid rgba(52, 152, 219, 0.2);
-}
+/* Alerts - REMOVIDO: Usando apenas SweetAlert2 */
+/* Classes de alert removidas para usar somente SweetAlert */
 
 .hidden {
     display: none !important;
@@ -797,7 +766,9 @@ a.login-link:hover {
     background: var(--primary-color);
     color: white;
     z-index: 10;
+    text-align: left;
 }
+
 
 .data-table tbody tr:hover {
     background-color: #f8f9fa;
@@ -845,103 +816,14 @@ a.login-link:hover {
 }
 
 /* ===============================
-   ALERTS E NOTIFICAÇÕES
+   ALERTS E NOTIFICAÇÕES - REMOVIDO: Usando apenas SweetAlert2
    =============================== */
-.alert {
-    padding: 12px 16px;
-    border-radius: var(--border-radius);
-    margin-bottom: 20px;
-    border: 1px solid transparent;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.alert-info {
-    background-color: #d1ecf1;
-    border-color: #bee5eb;
-    color: #0c5460;
-}
-
-.alert-warning {
-    background-color: #fff3cd;
-    border-color: #ffeaa7;
-    color: #856404;
-}
-
-.alert-danger {
-    background-color: #f8d7da;
-    border-color: #f5c6cb;
-    color: #721c24;
-}
-
-.alert-success {
-    background-color: #d4edda;
-    border-color: #c3e6cb;
-    color: #155724;
-}
+/* Classes de alert removidas para usar somente SweetAlert2 */
 
 /* ===============================
-   FLASH MESSAGES
+   FLASH MESSAGES - REMOVIDO: Usando apenas SweetAlert2
    =============================== */
-.flash-messages {
-    position: relative;
-    z-index: 10;
-    margin-bottom: 20px;
-}
-
-.flash-message {
-    padding: 12px 16px;
-    border-radius: var(--border-radius);
-    margin-bottom: 10px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    position: relative;
-    animation: slideDown 0.3s ease-out;
-}
-
-.flash-success {
-    background: rgba(39, 174, 96, 0.1);
-    color: var(--success-color);
-    border: 1px solid rgba(39, 174, 96, 0.2);
-}
-
-.flash-error {
-    background: rgba(231, 76, 60, 0.1);
-    color: var(--danger-color);
-    border: 1px solid rgba(231, 76, 60, 0.2);
-}
-
-.flash-warning {
-    background: rgba(243, 156, 18, 0.1);
-    color: var(--warning-color);
-    border: 1px solid rgba(243, 156, 18, 0.2);
-}
-
-.flash-info {
-    background: rgba(52, 152, 219, 0.1);
-    color: var(--info-color);
-    border: 1px solid rgba(52, 152, 219, 0.2);
-}
-
-.flash-close {
-    margin-left: auto;
-    cursor: pointer;
-    font-size: 18px;
-    font-weight: bold;
-    opacity: 0.7;
-    transition: opacity 0.2s;
-}
-
-.flash-close:hover {
-    opacity: 1;
-}
-
-@keyframes slideDown {
-    from { transform: translateY(-10px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
-}
+/* Classes de flash messages removidas para usar somente SweetAlert2 */
 
 /* ===============================
    RESPONSIVIDADE MELHORADA

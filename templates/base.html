@@ -13,6 +13,16 @@
 </head>
 <body>
     
+    <!-- Verificação inicial do SweetAlert2 -->
+    <script>
+        // Verificar se SweetAlert2 foi carregado corretamente
+        if (typeof Swal === 'undefined') {
+            console.error('❌ SweetAlert2 falhou ao carregar!');
+        } else {
+            console.log('✅ SweetAlert2 carregado com sucesso');
+        }
+    </script>
+    
     <!-- Sidebar -->
     <nav class="sidebar">
         <div class="nav-brand">
@@ -57,29 +67,6 @@
 
     <!-- Main Content -->
     <div class="main-content">
-        <!-- Flash Messages -->
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                <div class="flash-messages">
-                    {% for category, message in messages %}
-                        <div class="flash-message flash-{{ category }}">
-                            {% if category == 'error' %}
-                                <i class="fas fa-exclamation-circle"></i>
-                            {% elif category == 'success' %}
-                                <i class="fas fa-check-circle"></i>
-                            {% elif category == 'warning' %}
-                                <i class="fas fa-exclamation-triangle"></i>
-                            {% else %}
-                                <i class="fas fa-info-circle"></i>
-                            {% endif %}
-                            {{ message }}
-                            <span class="flash-close" onclick="this.parentElement.style.display='none'">&times;</span>
-                        </div>
-                    {% endfor %}
-                </div>
-            {% endif %}
-        {% endwith %}
-        
         {% block content %}{% endblock %}
     </div>
 
@@ -91,5 +78,35 @@
     </footer>
     
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    
+    <!-- SweetAlert Messages Handler - ONLY SweetAlert, no visual flash messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    // Aguardar um pouco para garantir que o app.js esteja carregado
+                    setTimeout(function() {
+                        {% for category, message in messages %}
+                            if (typeof window.showAlert === 'function') {
+                                window.showAlert('{{ message|replace("'", "\\'") }}', '{{ category }}');
+                            } else {
+                                console.error('window.showAlert function not available');
+                                // Fallback: tentar usar SweetAlert diretamente
+                                if (typeof Swal !== 'undefined') {
+                                    Swal.fire({
+                                        title: '{{ category|title }}',
+                                        text: '{{ message|replace("'", "\\'") }}',
+                                        icon: '{{ category }}' === 'error' ? 'error' : ('{{ category }}' === 'success' ? 'success' : 'info')
+                                    });
+                                } else {
+                                    alert('{{ message|replace("'", "\\'") }}');
+                                }
+                            }
+                        {% endfor %}
+                    }, 200);
+                });
+            </script>
+        {% endif %}
+    {% endwith %}
 </body>
 </html>

@@ -38,10 +38,10 @@
                                 <span class="badge badge-warning">Em Preparação</span>
                             {% elif remessa.situacao == 'Enviado' %}
                                 <span class="badge badge-info">Enviado</span>
-                            {% elif remessa.situacao == 'Aguardando Retorno' %}
-                                <span class="badge badge-primary">Aguardando Retorno</span>
-                            {% elif remessa.situacao == 'Aprovado' %}
-                                <span class="badge badge-success">Aprovado</span>
+                            {% elif remessa.situacao == 'Aguardando retorno' %}
+                                <span class="badge badge-primary">Aguardando retorno</span>
+                            {% elif remessa.situacao == 'Pendente de envio' %}
+                                <span class="badge badge-secondary">Pendente de envio</span>
                             {% elif remessa.situacao == 'Conta Aberta' %}
                                 <span class="badge badge-success">Conta Aberta</span>
                             {% elif remessa.situacao == 'Erro' %}
@@ -57,7 +57,7 @@
                                 <a href="{{ url_for('views.editar_remessa', id_remessa=remessa.id_remessa) }}" class="btn btn-sm btn-warning">
                                     <i class="fas fa-edit"></i> 
                                 </a>
-                                <form method="POST" action="{{ url_for('views.excluir_remessa', id_remessa=remessa.id_remessa) }}" style="display: inline;" onsubmit="return handleDeleteConfirm(event, 'Tem certeza que deseja excluir esta remessa?')">
+                                <form method="POST" action="{{ url_for('views.excluir_remessa', id_remessa=remessa.id_remessa) }}" style="display: inline;" class="delete-form" data-message="Tem certeza que deseja excluir esta remessa?">
                                     <button type="submit" class="btn btn-sm btn-danger">
                                         <i class="fas fa-trash"></i> 
                                     </button>

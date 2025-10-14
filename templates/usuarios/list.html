@@ -49,7 +49,7 @@
                                     <i class="fas fa-edit"></i> 
                                 </a>
                                 {% if usuario.id_usuario != session.user_id %}
-                                <form method="POST" action="{{ url_for('views.excluir_usuario', id_usuario=usuario.id_usuario) }}" style="display: inline;" onsubmit="return handleDeleteConfirm(event, 'Tem certeza que deseja excluir este usuário?')">
+                                <form method="POST" action="{{ url_for('views.excluir_usuario', id_usuario=usuario.id_usuario) }}" style="display: inline;" class="delete-form" data-message="Tem certeza que deseja excluir este usuário?">
                                     <button type="submit" class="btn btn-sm btn-danger">
                                         <i class="fas fa-trash"></i> 
                                     </button>
