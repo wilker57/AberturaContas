@@ -1,3 +1,4 @@
+/* Tema */
 :root {
     --primary-color: #162E70;
     --primary-hover: #1a3480;
@@ -12,7 +13,7 @@
     --shadow: 0 2px 10px rgba(0,0,0,0.1);
     --border-radius: 8px;
 }
-
+/* Elemeentos do Body */
 body {
     margin: 0;
     padding: 0;
@@ -115,9 +116,7 @@ body {
     to { transform: translateY(0); opacity: 1; }
 }
 
-/* ===============================
-   SIDEBAR STYLES
-   =============================== */
+/* SIDEBAR STYLES */
 .sidebar {
     position: fixed;
     left: 0;
@@ -206,7 +205,7 @@ body {
     border-bottom-right-radius: var(--border-radius);
 }
 
-/* Main Content - para não sobrepor a sidebar */
+/* Conteúdo - para não sobrepor a sidebar */
 .main-content {
     margin-left: 250px; /* Largura da sidebar */
     padding: 30px 30px;
