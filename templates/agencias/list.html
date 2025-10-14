@@ -10,14 +10,12 @@
             <i class="fas fa-plus"></i> Nova Agência
         </a>
     </div>
-
     <div class="content-card">
         {% if agencias %}
         <div class="table-container">
             <table class="data-table">
                 <thead>
                     <tr>
-                        
                         <th>Nome da Agência</th>
                         <th>Número</th>
                         <th>DV</th>
@@ -29,7 +27,6 @@
                 <tbody>
                     {% for agencia in agencias %}
                     <tr>
-                        
                         <td>{{ agencia.nome_agencia }}</td>
                         <td>{{ agencia.num_agencia }}</td>
                         <td>{{ agencia.dv_agencia }}</td>

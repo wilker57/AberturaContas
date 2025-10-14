@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block                                 <form method="POST" action="{{ url_for('views.excluir_concedente', id_concedente=concedente.id_concedente) }}" style="display: inline;" onsubmit="return handleDeleteConfirm(event, 'Tem certeza que deseja excluir este concedente?')">itle %}Concedentes - Abertura de Contas{% endblock %}
+{% block title %}Concedentes - Abertura de Contas{% endblock %}
 
 {% block content %}
 <div class="page-container">
@@ -10,14 +10,12 @@
             <i class="fas fa-plus"></i> Novo Concedente
         </a>
     </div>
-
     <div class="content-card">
         {% if concedentes %}
         <div class="table-container">
             <table class="data-table">
                 <thead>
                     <tr>
-                        
                         <th>Código Secretaria</th>
                         <th>Sigla</th>
                         <th>Nome</th>
@@ -27,18 +25,17 @@
                 <tbody>
                     {% for concedente in concedentes %}
                     <tr>
-                        
                         <td>{{ concedente.codigo_secretaria }}</td>
                         <td><strong>{{ concedente.sigla }}</strong></td>
                         <td>{{ concedente.nome }}</td>
                         <td>
                             <div class="action-buttons">
                                 <a href="{{ url_for('views.editar_concedente', id_concedente=concedente.id_concedente) }}" class="btn btn-sm btn-warning">
-                                    <i class="fas fa-edit"></i> Editar
+                                    <i class="fas fa-edit"></i> 
                                 </a>
-                                <form method="POST" action="{{ url_for('views.excluir_concedente', id_concedente=concedente.id_concedente) }}" style="display: inline;" onsubmit="return handleDeleteConfirm(event, 'Tem certeza que deseja excluir este concedente?')">>
+                                <form method="POST" action="{{ url_for('views.excluir_concedente', id_concedente=concedente.id_concedente) }}" style="display: inline;" onsubmit="return handleDeleteConfirm(event, 'Tem certeza que deseja excluir este concedente?')">
                                     <button type="submit" class="btn btn-sm btn-danger">
-                                        <i class="fas fa-trash"></i> Excluir
+                                        <i class="fas fa-trash"></i> 
                                     </button>
                                 </form>
                             </div>
