@@ -79,13 +79,16 @@ window.confirmDelete = async function(message = 'Tem certeza que deseja excluir 
 };
 
 document.addEventListener('DOMContentLoaded', function () {
-    console.log('DOM carregado');
-    console.log('SweetAlert2 disponível?', typeof Swal !== 'undefined');
-    console.log('showAlert function available?', typeof window.showAlert === 'function');
+    console.log('✅ DOM carregado');
+    console.log('✅ SweetAlert2 disponível?', typeof Swal !== 'undefined');
+    console.log('✅ showAlert function available?', typeof window.showAlert === 'function');
+    console.log('✅ confirmDelete function available?', typeof window.confirmDelete === 'function');
     
     setActiveMenuItem();
     addFormValidation();
     protectDeleteForms();
+    
+    console.log('✅ Todas as funções de inicialização concluídas');
 });
 
 function setActiveMenuItem() {
@@ -216,64 +219,95 @@ function sortTable(table, column, direction) {
 
 // Proteção adicional para formulários de exclusão
 function protectDeleteForms() {
-    console.log('Configurando proteção para formulários de exclusão...');
+    console.log('🔒 Configurando proteção para formulários de exclusão...');
     
     // Buscar todos os formulários que fazem POST para rotas de exclusão OU têm a classe delete-form
     const deleteForms = document.querySelectorAll('form[action*="excluir"], .delete-form');
     
-    console.log('Encontrados', deleteForms.length, 'formulários de exclusão');
+    console.log(`🔍 Encontrados ${deleteForms.length} formulários de exclusão`);
+    
+    if (deleteForms.length === 0) {
+        console.warn('⚠️ ATENÇÃO: Nenhum formulário de exclusão encontrado!');
+    }
     
     deleteForms.forEach((form, index) => {
-        console.log(`Configurando formulário ${index + 1}:`, form.action || 'sem action');
+        console.log(`📋 Configurando formulário ${index + 1}:`, form.action || 'sem action');
+        
+        // Remover listeners antigos se existirem
+        form.onsubmit = null;
         
         form.addEventListener('submit', function(event) {
-            event.preventDefault();
-            console.log('Formulário de exclusão submetido, interceptando...');
+            // Verificar se já foi confirmado
+            const isConfirmed = form.getAttribute('data-confirmed') === 'true';
             
-            // Pegar a mensagem do data-attribute ou determinar baseado na URL
-            let message = form.getAttribute('data-message');
-            
-            if (!message) {
-                // Determinar o tipo de item baseado na URL
-                const action = form.getAttribute('action') || '';
-                let itemType = 'este item';
+            if (!isConfirmed) {
+                // Se não foi confirmado, bloquear o envio
+                event.preventDefault();
+                event.stopPropagation();
+                event.stopImmediatePropagation();
+                console.log('🛑 Formulário de exclusão interceptado!');
                 
-                if (action.includes('usuario')) itemType = 'este usuário';
-                else if (action.includes('banco')) itemType = 'este banco';
-                else if (action.includes('agencia')) itemType = 'esta agência';
-                else if (action.includes('concedente')) itemType = 'este concedente';
-                else if (action.includes('remessa')) itemType = 'esta remessa';
-                else if (action.includes('conta_convenio')) itemType = 'esta conta convênio';
+                // Pegar a mensagem do data-attribute ou determinar baseado na URL
+                let message = form.getAttribute('data-message');
                 
-                message = `Tem certeza que deseja excluir ${itemType}?`;
-            }
-            
-            console.log('Chamando confirmDelete com mensagem:', message);
-            
-            window.confirmDelete(message).then(confirmed => {
-                console.log('Resultado da confirmação:', confirmed);
-                if (confirmed) {
-                    console.log('Confirmado! Enviando formulário...');
-                    // Exibir loading durante o processo de exclusão
-                    Swal.fire({
-                        title: 'Excluindo...',
-                        html: 'Por favor aguarde',
-                        icon: 'info',
-                        allowOutsideClick: false,
-                        allowEscapeKey: false,
-                        showConfirmButton: false,
-                        didOpen: () => {
-                            Swal.showLoading();
-                        }
-                    });
-                    form.submit();
-                } else {
-                    console.log('Cancelado pelo usuário');
+                if (!message) {
+                    // Determinar o tipo de item baseado na URL
+                    const action = form.getAttribute('action') || '';
+                    let itemType = 'este item';
+                    
+                    if (action.includes('usuario')) itemType = 'este usuário';
+                    else if (action.includes('banco')) itemType = 'este banco';
+                    else if (action.includes('agencia')) itemType = 'esta agência';
+                    else if (action.includes('concedente')) itemType = 'este concedente';
+                    else if (action.includes('remessa')) itemType = 'esta remessa';
+                    else if (action.includes('conta_convenio')) itemType = 'esta conta convênio';
+                    
+                    message = `Tem certeza que deseja excluir ${itemType}?`;
                 }
-            }).catch(error => {
-                console.error('Erro na confirmação:', error);
-                alert('Erro ao exibir confirmação: ' + error.message);
-            });
-        });
+                
+                console.log('📞 Chamando confirmDelete com mensagem:', message);
+                
+                window.confirmDelete(message).then(confirmed => {
+                    console.log('✅ Resultado da confirmação:', confirmed);
+                    if (confirmed) {
+                        console.log('✅ Confirmado! Marcando formulário e reenviando...');
+                        
+                        // Marcar como confirmado
+                        form.setAttribute('data-confirmed', 'true');
+                        
+                        // Exibir loading durante o processo de exclusão
+                        if (typeof Swal !== 'undefined') {
+                            Swal.fire({
+                                title: 'Excluindo...',
+                                html: 'Por favor aguarde',
+                                icon: 'info',
+                                allowOutsideClick: false,
+                                allowEscapeKey: false,
+                                showConfirmButton: false,
+                                didOpen: () => {
+                                    Swal.showLoading();
+                                }
+                            });
+                        }
+                        
+                        // Reenviar o formulário
+                        form.submit();
+                    } else {
+                        console.log('❌ Cancelado pelo usuário');
+                    }
+                }).catch(error => {
+                    console.error('❌ Erro na confirmação:', error);
+                    alert('Erro ao exibir confirmação: ' + error.message);
+                });
+                
+                return false;
+            } else {
+                // Já foi confirmado, permitir o envio
+                console.log('✅ Formulário confirmado, permitindo envio');
+                return true;
+            }
+        }, true); // useCapture = true para capturar antes de outros handlers
     });
+    
+    console.log('🔒 Proteção de formulários configurada com sucesso');
 }

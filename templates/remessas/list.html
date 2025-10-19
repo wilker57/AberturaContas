@@ -57,8 +57,8 @@
                                 <a href="{{ url_for('views.editar_remessa', id_remessa=remessa.id_remessa) }}" class="btn btn-sm btn-warning">
                                     <i class="fas fa-edit"></i> 
                                 </a>
-                                <form method="POST" action="{{ url_for('views.excluir_remessa', id_remessa=remessa.id_remessa) }}" style="display: inline;" class="delete-form" data-message="Tem certeza que deseja excluir esta remessa?">
-                                    <button type="submit" class="btn btn-sm btn-danger">
+                                <form method="POST" action="{{ url_for('views.excluir_remessa', id_remessa=remessa.id_remessa) }}" style="display: inline;" class="delete-form" data-message="Tem certeza que deseja excluir esta remessa?" data-confirmed="false">
+                                    <button type="submit" class="btn btn-sm btn-danger" title="Excluir remessa">
                                         <i class="fas fa-trash"></i> 
                                     </button>
                                 </form>
