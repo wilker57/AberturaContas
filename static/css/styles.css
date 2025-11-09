@@ -205,47 +205,7 @@ body {
     border-bottom-right-radius: var(--border-radius);
 }
 
-<<<<<<< HEAD
-.user-info i {
-    margin-right: 10px;
-}
-
-/* Botão de alternância de tema */
-.theme-switcher {
-    position: absolute;
-    bottom: 120px; /* Ajuste a posição conforme necessário, acima do logout */
-    width: 100%;
-    padding: 0 20px;
-    box-sizing: border-box;
-}
-
-.theme-toggle-btn {
-    background-color: #34495e;
-    border: none;
-    color: white;
-    padding: 10px 15px;
-    width: 100%;
-    text-align: left;
-    cursor: pointer;
-    border-radius: 5px;
-    display: flex;
-    align-items: center;
-    font-size: 1em;
-    transition: background-color 0.3s;
-}
-
-.theme-toggle-btn:hover {
-    background-color: #4a6278;
-}
-
-.theme-toggle-btn i {
-    margin-right: 10px;
-}
-
-/* Main Content - para não sobrepor a sidebar */
-=======
 /* Conteúdo - para não sobrepor a sidebar */
->>>>>>> cc6496e378aa030fad768eface98cc66458af699
 .main-content {
     margin-left: 250px; 
     padding: 30px 30px;
