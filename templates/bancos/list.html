@@ -13,11 +13,35 @@
 
     <div class="content-card">
         {% if bancos %}
+
+        <!-- Toolbar da tabela -->
+        <div class="table-toolbar">
+
+            <!-- Busca com ícone -->
+            <div class="input-icon">
+                <i class="fas fa-search" aria-hidden="true"></i>
+                <input
+                  type="search"
+                  id="searchText"
+                  class="form-control"
+                  placeholder="Buscar por código ou nome do banco..."
+                  aria-label="Buscar por código ou nome do banco"
+                >
+            </div>
+
+            <!-- Ações -->
+            <div class="toolbar-actions">
+                <button type="button" id="clearFilters" class="btn btn-outline">Limpar</button>
+                <button type="button" id="searchButton" class="btn btn-primary">Pesquisar</button>
+            </div>
+
+        </div> 
+
         <div class="table-container">
             <table class="data-table">
                 <thead>
                     <tr>
-                        
+                        <th>CÓD. Banco</th>
                         <th>Nome</th>
                         <th>Ações</th>
                     </tr>
@@ -25,16 +49,16 @@
                 <tbody>
                     {% for banco in bancos %}
                     <tr>
-                        
+                        <td>{{ banco.id_banco }}</td>
                         <td>{{ banco.nome }}</td>
                         <td>
                             <div class="action-buttons">
                                 <a href="{{ url_for('views.editar_banco', id_banco=banco.id_banco) }}" class="btn btn-sm btn-warning">
-                                    <i class="fas fa-edit"></i> 
+                                    <i class="fas fa-edit"></i>
                                 </a>
                                 <form method="POST" action="{{ url_for('views.excluir_banco', id_banco=banco.id_banco) }}" style="display: inline;" class="delete-form" data-message="Tem certeza que deseja excluir este banco?">
                                     <button type="submit" class="btn btn-sm btn-danger">
-                                        <i class="fas fa-trash"></i> 
+                                        <i class="fas fa-trash"></i>
                                     </button>
                                 </form>
                             </div>
@@ -44,6 +68,7 @@
                 </tbody>
             </table>
         </div>
+
         {% else %}
         <div class="empty-state">
             <i class="fas fa-university fa-3x"></i>

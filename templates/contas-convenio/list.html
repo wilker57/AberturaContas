@@ -5,7 +5,7 @@
 {% block content %}
 <div class="page-container">
     <div class="page-header">
-        <h1><i class="fas fa-credit-card"></i> Contas Convênio</h1>
+        <h1>Contas Convênio</h1>
         <a href="{{ url_for('views.criar_conta_convenio') }}" class="btn btn-success">
             <i class="fas fa-plus"></i> Nova Conta Convênio
         </a>
@@ -13,18 +13,58 @@
 
     <div class="content-card">
         {% if contas %}
+      <!-- Toolbar da tabela -->
+<div class="table-toolbar">
+
+  <!-- Busca com ícone -->
+  <div class="input-icon">
+    <i class="fas fa-search" aria-hidden="true"></i>
+    <input
+      type="search"
+      id="searchText"
+      class="form-control"
+      placeholder="Buscar por agencia, proponente..."
+      aria-label="Buscar por conta convênio, proponente ou agência"
+    >
+  </div>
+
+  <!-- Intervalo de datas -->
+  <div class="date-range">
+    <label for="dateFrom">De</label>
+    <input
+      type="date"
+      id="dateFrom"
+      class="form-control"
+      aria-label="Filtrar a partir de"
+    >
+    <label for="dateTo">Até</label>
+    <input
+      type="date"
+      id="dateTo"
+      class="form-control"
+      aria-label="Filtrar até"
+    >
+  </div>
+
+  <!-- Ações -->
+  <div class="toolbar-actions">
+    <button type="button" id="clearFilters" class="btn btn-outline">Limpar</button>
+    <button type="button" id="searchButton" class="btn btn-primary">Pesquisar</button>
+  </div>
+
+</div>
+
+
         <div class="table-container">
             <table class="data-table">
                 <thead>
                     <tr>
-                        
+                        <th>Data Abertura</th>
+                         <th>Banco</th>
+                         <th>Agência</th>
                         <th>Nº da Conta</th>
                         <th>DV</th>
-                        <th>Data Abertura</th>
-                        <th>Processo</th>
                         <th>Proponente</th>
-                        <th>Agência</th>
-                        <th>Banco</th>
                         <th>Ações</th>
                     </tr>
                 </thead>
@@ -32,13 +72,14 @@
                     {% for conta in contas %}
                     <tr>
                         
+                        <td>{{ conta.dt_abertura.strftime('%d/%m/%Y') if conta.dt_abertura else '-' }}</td>
+                        <td>{{ conta.banco_nome }}</td>
+                        <td>{{ conta.nome_agencia }}</td>
                         <td><strong>{{ conta.num_conta }}</strong></td>
                         <td>{{ conta.dv_conta }}</td>
-                        <td>{{ conta.dt_abertura.strftime('%d/%m/%Y') if conta.dt_abertura else '-' }}</td>
-                        <td>{{ conta.num_processo }}</td>
                         <td>{{ conta.nome_proponente }}</td>
-                        <td>{{ conta.nome_agencia }}</td>
-                        <td>{{ conta.banco_nome }}</td>
+                        
+                        
                         <td>
                             <div class="action-buttons">
                                 <a href="{{ url_for('views.editar_conta_convenio', id_conta_convenio=conta.id_conta_convenio) }}" class="btn btn-sm btn-warning">

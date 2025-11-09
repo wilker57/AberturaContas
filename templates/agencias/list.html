@@ -5,13 +5,35 @@
 {% block content %}
 <div class="page-container">
     <div class="page-header">
-        <h1><i class="fas fa-building"></i> Agências</h1>
-        <a href="{{ url_for('views.criar_agencia') }}" class="btn btn-primary">
+        <h1>Agências</h1>
+        <a href="{{ url_for('views.criar_agencia') }}" class="btn btn-success">
             <i class="fas fa-plus"></i> Nova Agência
         </a>
     </div>
     <div class="content-card">
         {% if agencias %}
+             <!-- Toolbar da tabela -->
+        <div class="table-toolbar">
+
+            <!-- Busca com ícone -->
+            <div class="input-icon">
+                <i class="fas fa-search" aria-hidden="true"></i>
+                <input
+                  type="search"
+                  id="searchText"
+                  class="form-control"
+                  placeholder="Buscar por nº ou nome da agência..."
+                  aria-label="Buscar agências"
+                >
+            </div>
+
+            <!-- Ações -->
+            <div class="toolbar-actions">
+                <button type="button" id="clearFilters" class="btn btn-outline">Limpar</button>
+                <button type="button" id="searchButton" class="btn btn-primary">Pesquisar</button>
+            </div>
+
+        </div> 
         <div class="table-container">
             <table class="data-table">
                 <thead>

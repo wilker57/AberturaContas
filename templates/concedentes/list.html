@@ -5,13 +5,35 @@
 {% block content %}
 <div class="page-container">
     <div class="page-header">
-        <h1><i class="fas fa-handshake"></i> Concedentes</h1>
+        <h1>Concedentes</h1>
         <a href="{{ url_for('views.criar_concedente') }}" class="btn btn-success">
             <i class="fas fa-plus"></i> Novo Concedente
         </a>
     </div>
     <div class="content-card">
         {% if concedentes %}
+              <!-- Toolbar da tabela -->
+        <div class="table-toolbar">
+
+            <!-- Busca com ícone -->
+            <div class="input-icon">
+                <i class="fas fa-search" aria-hidden="true"></i>
+                <input
+                  type="search"
+                  id="searchText"
+                  class="form-control"
+                  placeholder="Buscar por código ou nome..."
+                  aria-label="Buscar por código ou nome do concedente"
+                >
+            </div>
+
+            <!-- Ações -->
+            <div class="toolbar-actions">
+                <button type="button" id="clearFilters" class="btn btn-outline">Limpar</button>
+                <button type="button" id="searchButton" class="btn btn-primary">Pesquisar</button>
+            </div>
+
+        </div> 
         <div class="table-container">
             <table class="data-table">
                 <thead>

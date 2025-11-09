@@ -1,11 +1,8 @@
-// app.js - Flask Template Architecture with SweetAlert2 only
-
-// Tornar showAlert global para ser acessível de qualquer lugar
 window.showAlert = function(message, type = 'info') {
-    // Verificar se SweetAlert2 está disponível
+    
     if (typeof Swal === 'undefined') {
         console.error('SweetAlert2 não está carregado!');
-        alert(message); // Fallback para alert nativo
+        alert(message); 
         return;
     }
 
@@ -44,14 +41,14 @@ window.showAlert = function(message, type = 'info') {
     });
 };
 
-// Função global para confirmação de exclusão
+// Função para confirmação de exclusão
 window.confirmDelete = async function(message = 'Tem certeza que deseja excluir este item?') {
     console.log('confirmDelete chamada com mensagem:', message);
     
-    // Verificar se SweetAlert2 está disponível
+    
     if (typeof Swal === 'undefined') {
         console.error('SweetAlert2 não está carregado!');
-        return confirm(message); // Fallback para confirm nativo
+        return confirm(message); 
     }
     
     try {
@@ -60,7 +57,7 @@ window.confirmDelete = async function(message = 'Tem certeza que deseja excluir 
             text: message + ' Esta ação não pode ser desfeita!',
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonColor: '#dc3545',
+            confirmButtonColor: '#f90a22ff',
             cancelButtonColor: '#6c757d',
             confirmButtonText: 'Sim, excluir!',
             cancelButtonText: 'Cancelar',
@@ -134,7 +131,7 @@ function addFormValidation() {
     });
 }
 
-// Format utilities
+// Validação e formatação de campos
 function formatCurrency(input) {
     let value = input.value.replace(/\D/g, '');
     value = (value / 100).toFixed(2);
@@ -306,8 +303,32 @@ function protectDeleteForms() {
                 console.log('✅ Formulário confirmado, permitindo envio');
                 return true;
             }
-        }, true); // useCapture = true para capturar antes de outros handlers
+        }, true); 
     });
     
     console.log('🔒 Proteção de formulários configurada com sucesso');
 }
+
+// Função para confirmar exclusão
+function confirmDelete(url) {
+    Swal.fire({
+        title: 'Você tem certeza?',
+        text: "Esta ação não pode ser revertida!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Sim, excluir!',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Criar um formulário para enviar a requisição POST
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = url;
+            document.body.appendChild(form);
+            form.submit();
+        }
+    });
+}
+

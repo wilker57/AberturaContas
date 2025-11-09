@@ -5,23 +5,65 @@
 {% block content %}
 <div class="page-container">
     <div class="page-header">
-        <h1><i class="fas fa-file-invoice"></i> Remessas</h1>
+        <h1>Remessas</h1>
         <a href="{{ url_for('views.criar_remessa') }}" class="btn btn-success">
             <i class="fas fa-plus"></i> Nova Remessa
         </a>
+        
     </div>
     <div class="content-card">
         {% if remessas %}
+<!-- Toolbar da tabela -->
+<div class="table-toolbar">
+
+  <!-- Busca com ícone -->
+  <div class="input-icon">
+    <i class="fas fa-search" aria-hidden="true"></i>
+    <input
+      type="search"
+      id="searchText"
+      class="form-control"
+      placeholder="Buscar por remessa, proponente ou convênio..."
+      aria-label="Buscar por remessa, proponente ou convênio"
+    >
+  </div>
+
+  <!-- Intervalo de datas -->
+  <div class="date-range">
+    <label for="dateFrom">De</label>
+    <input
+      type="date"
+      id="dateFrom"
+      class="form-control"
+      aria-label="Filtrar a partir de"
+    >
+    <label for="dateTo">Até</label>
+    <input
+      type="date"
+      id="dateTo"
+      class="form-control"
+      aria-label="Filtrar até"
+    >
+  </div>
+
+  <!-- Ações -->
+  <div class="toolbar-actions">
+    <button type="button" id="clearFilters" class="btn btn-outline">Limpar</button>
+    <button type="button" id="searchButton" class="btn btn-primary">Pesquisar</button>
+    
+  </div>
+
+</div>
+
         <div class="table-container">
             <table class="data-table">
                 <thead>
                     <tr>
-                        <th>Processo</th>
+                        <th>Remessa</th>
                         <th>Proponente</th>
                         <th>CPF/CNPJ</th>
                         <th>Convênio</th>
                         <th>Situação</th>
-                        <th>Concedente</th>
                         <th>Data</th>
                         <th>Ações</th>
                     </tr>
@@ -29,7 +71,7 @@
                 <tbody>
                     {% for remessa in remessas %}
                     <tr>
-                        <td><strong>{{ remessa.num_processo }}</strong></td>
+                        <td><strong>{{ remessa.num_remessa}}</strong></td>
                         <td>{{ remessa.nome_proponente }}</td>
                         <td>{{ remessa.cpf_cnpj }}</td>
                         <td>{{ remessa.num_convenio }}</td>
@@ -50,10 +92,13 @@
                                 <span class="badge badge-secondary">{{ remessa.situacao }}</span>
                             {% endif %}
                         </td>
-                        <td>{{ remessa.concedente_nome }}</td>
                         <td>{{ remessa.dt_remessa.strftime('%d/%m/%Y') if remessa.dt_remessa else '-' }}</td>
                         <td>
                             <div class="action-buttons">
+                                      <!-- Botão PDF -->    
+                        <a href="{{ url_for('views.gerar_pdf', id_remessa=remessa.id_remessa) }}" target="_blank" class="btn btn-pdf">
+                            <i class="fas fa-eye"></i>
+                            </a>
                                 <a href="{{ url_for('views.editar_remessa', id_remessa=remessa.id_remessa) }}" class="btn btn-sm btn-warning">
                                     <i class="fas fa-edit"></i> 
                                 </a>

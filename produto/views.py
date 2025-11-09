@@ -1,10 +1,14 @@
 # views.py - Arquitetura Tradicional com SQL Direto
 
-from flask import Blueprint, render_template, redirect, url_for, session, request, flash
+from flask import Blueprint, render_template, redirect, url_for, session, request, flash, make_response
 import psycopg2
 from psycopg2.extras import RealDictCursor
 import bcrypt
 from datetime import date
+import io
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import letter
+from reportlab.lib.units import inch
 
 views_bp = Blueprint('views', __name__)
 
@@ -603,7 +607,7 @@ def editar_usuario(id_usuario):
                 WHERE id_usuario = %s
             """
             result = execute_query(query, (nome, matricula, email, instituicao, login, perfil_enum, id_usuario), fetch=False)
-        #aLTERÇAO SENHA
+        #aLTERÇÃO SENHA
         if result:
             flash('Usuário atualizado com sucesso!', 'success')
             return redirect(url_for('views.usuarios'))
@@ -775,6 +779,72 @@ def excluir_remessa(id_remessa):
         flash('Erro ao excluir remessa.', 'error')
     
     return redirect(url_for('views.remessas'))
+#Gerar PDF da remessa
+@views_bp.route('/remessas/editar/<int:id_remessa>/gerar-pdf')
+def gerar_pdf(id_remessa):
+    if 'user_id' not in session:
+        return redirect(url_for('views.login'))
+
+    # Buscar dados completos da remessa
+    query = """
+        SELECT 
+            r.num_remessa, r.num_processo, r.nome_proponente, r.cpf_cnpj, r.num_convenio, r.situacao,
+            r.dt_remessa,
+            c.nome AS concedente_nome,
+            u.nome AS usuario_nome,
+            b.nome AS banco_nome
+        FROM remessa r
+        LEFT JOIN concedente c ON r.id_concedente = c.id_concedente
+        LEFT JOIN usuario u ON r.id_usuario = u.id_usuario
+        LEFT JOIN banco b ON r.id_banco = b.id_banco
+        WHERE r.id_remessa = %s;
+    """
+    remessa_data = execute_query(query, (id_remessa,))
+
+    if not remessa_data:
+        flash('Remessa não encontrada.', 'error')
+        return redirect(url_for('views.remessas'))
+
+    remessa = remessa_data[0]
+
+    # Configuração do PDF
+    buffer = io.BytesIO()
+    p = canvas.Canvas(buffer, pagesize=letter)
+    width, height = letter
+
+    # Desenhar o conteúdo do PDF
+    p.setFont("Helvetica-Bold", 16)
+    p.drawString(inch, height - inch, f"Detalhes da Remessa Nº: {remessa['num_remessa']}")
+
+    p.setFont("Helvetica", 12)
+    y_position = height - 1.5 * inch
+
+    def draw_line(label, value, y):
+        p.setFont("Helvetica-Bold", 12)
+        p.drawString(inch, y, f"{label}:")
+        p.setFont("Helvetica", 12)
+        p.drawString(inch + 2 * inch, y, str(value) if value is not None else "N/A")
+        return y - 0.3 * inch
+
+    y_position = draw_line("Número do Processo", remessa['num_processo'], y_position)
+    y_position = draw_line("Nome do Proponente", remessa['nome_proponente'], y_position)
+    y_position = draw_line("CPF/CNPJ", remessa['cpf_cnpj'], y_position)
+    y_position = draw_line("Número do Convênio", remessa['num_convenio'], y_position)
+    y_position = draw_line("Situação", remessa['situacao'], y_position)
+    y_position = draw_line("Data da Remessa", remessa['dt_remessa'].strftime('%d/%m/%Y') if remessa['dt_remessa'] else "N/A", y_position)
+    y_position = draw_line("Concedente", remessa['concedente_nome'], y_position)
+    y_position = draw_line("Usuário Responsável", remessa['usuario_nome'], y_position)
+    y_position = draw_line("Banco", remessa['banco_nome'], y_position)
+
+    p.showPage()
+    p.save()
+
+    buffer.seek(0)
+    response = make_response(buffer.getvalue())
+    response.headers['Content-Type'] = 'application/pdf'
+    response.headers['Content-Disposition'] = f'inline; filename=remessa_{remessa["num_remessa"]}.pdf'
+    
+    return response
 
 # ===========================
 # CRUD - CONTAS CONVÊNIO
