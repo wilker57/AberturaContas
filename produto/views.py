@@ -345,7 +345,11 @@ def agencias():
         SELECT *,
         (SELECT nome FROM banco WHERE banco.id_banco = agencia.id_banco) AS banco_nome
         FROM agencia
+<<<<<<< HEAD
         ORDER BY nome_agencia;
+=======
+        ORDER BY a.nome_agencia;
+>>>>>>> cc6496e378aa030fad768eface98cc66458af699
     """
     agencias_list = execute_query(query)
     
@@ -650,6 +654,10 @@ def remessas():
     
     query = """
         SELECT *,
+<<<<<<< HEAD
+=======
+        (SELECT nome_agencia FROM agencia WHERE agencia.id_banco = remessa.id_banco) AS nome_agencia,
+>>>>>>> cc6496e378aa030fad768eface98cc66458af699
         (SELECT nome FROM concedente WHERE concedente.id_concedente = remessa.id_concedente) AS concedente_nome,
         (SELECT nome FROM usuario WHERE usuario.id_usuario = remessa.id_usuario) AS usuario_nome,
         (SELECT nome FROM banco WHERE banco.id_banco = remessa.id_banco) AS banco_nome
@@ -936,7 +944,11 @@ def editar_conta_convenio(id_conta_convenio):
         SELECT *,
         (SELECT num_processo FROM remessa WHERE remessa.id_remessa = cc.id_remessa) AS num_processo,
         (SELECT nome_agencia FROM agencia WHERE agencia.id_agencia = cc.id_agencia) AS nome_agencia,
+<<<<<<< HEAD
         (SELECT nome FROM banco WHERE banco.id_banco = (SELECT id_banco FROM agencia WHERE agencia.id_agencia = cc.id_agencia)) AS banco_nome
+=======
+        (SELECT nome FROM banco WHERE banco.id_banco = (SELECT id_banco FROM agencia WHERE agencia.id_agencia = cc.id_agencia) AS banco_nome
+>>>>>>> cc6496e378aa030fad768eface98cc66458af699
         FROM conta_convenio cc
         WHERE cc.id_conta_convenio = %s
     """
