@@ -254,6 +254,9 @@ def dashboard():
     
     result = execute_query("SELECT COUNT(*) as total FROM remessa WHERE situacao = 'Erro'")
     remessas['erro'] = result[0]['total'] if result else 0
+
+    result = execute_query("SELECT COUNT(*) as total FROM remessa WHERE situacao = 'Aprovado'")
+    remessas['aprovado'] = result[0]['total'] if result else 0
     
     return render_template('dashboard.html', stats=stats, remessas=remessas)
 
@@ -649,24 +652,28 @@ def remessas():
         return redirect(url_for('views.login'))
     
     query = """
-        SELECT
-            r.*,
-            ag.nome_agencia,
-            c.nome AS concedente_nome,
-            u.nome AS usuario_nome,
-            b.nome AS banco_nome
-        FROM remessa r
-        LEFT JOIN conta_convenio cc ON r.id_remessa = cc.id_remessa
-        LEFT JOIN agencia ag ON cc.id_agencia = ag.id_agencia
-        LEFT JOIN concedente c ON r.id_concedente = c.id_concedente
-        LEFT JOIN usuario u ON r.id_usuario = u.id_usuario
-        LEFT JOIN banco b ON r.id_banco = b.id_banco
-        ORDER BY r.dt_remessa DESC;
+       SELECT
+        r.*,
+  (
+    SELECT ag.nome_agencia
+    FROM agencia ag
+    WHERE ag.id_agencia = (
+      SELECT MIN(cc.id_agencia)
+      FROM conta_convenio cc
+      WHERE cc.id_remessa = r.id_remessa
+    )
+  ) AS nome_agencia,
+
+  (SELECT c.nome FROM concedente c WHERE c.id_concedente = r.id_concedente) AS concedente_nome,
+  (SELECT u.nome FROM usuario  u WHERE u.id_usuario    = r.id_usuario)    AS usuario_nome,
+  (SELECT b.nome FROM banco    b WHERE b.id_banco      = r.id_banco)      AS banco_nome
+FROM remessa r
+ORDER BY r.dt_remessa DESC;
+
     """ 
     remessas_list = execute_query(query)
     
     return render_template('remessas/list.html', remessas=remessas_list)
-
 
 @views_bp.route('/remessas/criar', methods=['GET', 'POST'])
 def criar_remessa():
@@ -796,16 +803,26 @@ def gerar_pdf(id_remessa):
     # Buscar dados completos da remessa
     query = """
         SELECT 
-            r.num_remessa, r.num_processo, r.nome_proponente, r.cpf_cnpj, r.num_convenio, r.situacao,
-            r.dt_remessa,
-            c.nome AS concedente_nome,
-            u.nome AS usuario_nome,
-            b.nome AS banco_nome
-        FROM remessa r
-        LEFT JOIN concedente c ON r.id_concedente = c.id_concedente
-        LEFT JOIN usuario u ON r.id_usuario = u.id_usuario
-        LEFT JOIN banco b ON r.id_banco = b.id_banco
-        WHERE r.id_remessa = %s;
+    *,
+
+    -- Nome do concedente via subconsulta
+    (SELECT c.nome 
+     FROM concedente c 
+     WHERE c.id_concedente = r.id_concedente) AS concedente_nome,
+
+    -- Nome do usuário via subconsulta
+    (SELECT u.nome 
+     FROM usuario u 
+     WHERE u.id_usuario = r.id_usuario) AS usuario_nome,
+
+    -- Nome do banco via subconsulta
+    (SELECT b.nome 
+     FROM banco b 
+     WHERE b.id_banco = r.id_banco) AS banco_nome
+
+FROM remessa r
+WHERE r.id_remessa = %s;
+
     """
     remessa_data = execute_query(query, (id_remessa,))
 

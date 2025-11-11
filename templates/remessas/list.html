@@ -7,7 +7,7 @@
     <div class="page-header">
         <h1>Remessas</h1>
         <a href="{{ url_for('views.criar_remessa') }}" class="btn btn-success">
-            <i class="fas fa-plus"></i> Nova Remessa
+            <i class="fas fa-plus"></i> Nova
         </a>
         
     </div>
@@ -30,26 +30,20 @@
 
   <!-- Intervalo de datas -->
   <div class="date-range">
-    <label for="dateFrom">De</label>
+    <label for="dateFrom"></label>
     <input
       type="date"
       id="dateFrom"
       class="form-control"
       aria-label="Filtrar a partir de"
     >
-    <label for="dateTo">Até</label>
-    <input
-      type="date"
-      id="dateTo"
-      class="form-control"
-      aria-label="Filtrar até"
-    >
   </div>
 
   <!-- Ações -->
   <div class="toolbar-actions">
+    <button type="button" id="searchButton" class="btn btn-primary">Buscar</button>
     <button type="button" id="clearFilters" class="btn btn-outline">Limpar</button>
-    <button type="button" id="searchButton" class="btn btn-primary">Pesquisar</button>
+    
     
   </div>
 
@@ -88,8 +82,11 @@
                                 <span class="badge badge-success">Conta Aberta</span>
                             {% elif remessa.situacao == 'Erro' %}
                                 <span class="badge badge-danger">Erro</span>
+                            {% elif remessa.situacao == 'Aprovado' %}
+                                <span class="badge badge-success">Aprovado</span>
                             {% else %}
                                 <span class="badge badge-secondary">{{ remessa.situacao }}</span>
+                                
                             {% endif %}
                         </td>
                         <td>{{ remessa.dt_remessa.strftime('%d/%m/%Y') if remessa.dt_remessa else '-' }}</td>
