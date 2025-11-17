@@ -206,7 +206,8 @@ def dashboard():
     if 'user_id' not in session:
         return redirect(url_for('views.login'))
     
-    # Estatísticas para o dashboard
+    # Cria dicionário vazio
+    # Contar a quantidade
     stats = {}
     
     # Total de usuários
@@ -233,7 +234,7 @@ def dashboard():
     result = execute_query("SELECT COUNT(*) as total FROM conta_convenio")
     stats['total_contas'] = result[0]['total'] if result else 0
 
-    # ADICIONE: status das remessas
+    # cria dicinário vazio
     remessas = {}
     
     # Contagem de remessas por status
@@ -610,7 +611,7 @@ def editar_usuario(id_usuario):
                 WHERE id_usuario = %s
             """
             result = execute_query(query, (nome, matricula, email, instituicao, login, perfil_enum, id_usuario), fetch=False)
-        #aLTERÇÃO SENHA
+        #
         if result:
             flash('Usuário atualizado com sucesso!', 'success')
             return redirect(url_for('views.usuarios'))
@@ -655,7 +656,7 @@ def remessas():
        SELECT
         r.*,
   (
-    SELECT ag.nome_agencia
+    SELECT ag.nome_agencia 
     FROM agencia ag
     WHERE ag.id_agencia = (
       SELECT MIN(cc.id_agencia)
@@ -885,7 +886,7 @@ def contas_convenio():
         (SELECT num_processo FROM remessa WHERE remessa.id_remessa = conta_convenio.id_remessa) AS num_processo,
         (SELECT nome_proponente FROM remessa WHERE remessa.id_remessa = conta_convenio.id_remessa) AS nome_proponente,
         (SELECT nome_agencia FROM agencia WHERE agencia.id_agencia = conta_convenio.id_agencia) AS nome_agencia,
-        (SELECT nome FROM banco WHERE banco.id_banco = (SELECT id_banco FROM agencia WHERE agencia.id_agencia = conta_convenio.id_agencia)) AS banco_nome
+        (SELECT nome FROM banco WHERE banco.id_banco = (SELECT id_banco FROM agencia WHERE agencia.id_agencia = conta_convenio.id_agencia)) AS banco_nome 
         FROM conta_convenio
         ORDER BY dt_abertura DESC;
     """
