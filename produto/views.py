@@ -1,1002 +1,1444 @@
-# views.py - Arquitetura Tradicional com SQL Direto
-
-from flask import Blueprint, render_template, redirect, url_for, session, request, flash, make_response
+from flask import (
+    Blueprint,
+    render_template,
+    redirect,
+    url_for,
+    session,
+    request,
+    flash,
+    make_response,
+)
 import psycopg2
 from psycopg2.extras import RealDictCursor
 import bcrypt
-from datetime import date
 import io
-from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import letter
-from reportlab.lib.units import inch
+from functools import wraps
 
-views_bp = Blueprint('views', __name__)
+
+views_bp = Blueprint("views", __name__)
 
 # ===========================
-# FUNÇÕES AUXILIARES DE SENHA
+# CONFIG / DB / HELPERS
 # ===========================
 
-def generate_password_hash(password):
-    #Gera hash bcrypt para a senha
-    password_bytes = password.encode('utf-8')
-    salt = bcrypt.gensalt()
-    hashed = bcrypt.hashpw(password_bytes, salt)
-    return hashed.decode('utf-8')
-
-def check_password_hash(hashed_password, password):
-    #Verifica se a senha corresponde ao hash
-    try:
-        password_bytes = password.encode('utf-8')
-        hashed_bytes = hashed_password.encode('utf-8')
-        return bcrypt.checkpw(password_bytes, hashed_bytes)
-    except Exception as e:
-        print(f"Erro na verificação de senha: {e}")
-        return False
-
-# Configuração do banco de dados
 DB_CONFIG = {
-    'host': 'localhost',
-    'database': 'abertura_contas',
-    'user': 'postgres',
-    'password': 'wil874408',
-    'port': 5432
+    "host": "localhost",
+    "database": "abertura_contas",
+    "user": "postgres",
+    "password": "wil874408",
+    "port": 5432,
 }
 
+# Conexão com o banco de dados
 def get_db_connection():
-    #Cria uma conexão com o banco de dados PostgreSQL
+    """Cria uma conexão com o banco de dados PostgreSQL."""
     try:
-        conn = psycopg2.connect(**DB_CONFIG)
-        return conn
+        return psycopg2.connect(**DB_CONFIG)
     except Exception as e:
-        print(f"Erro ao conectar com o banco: {e}")
+        print(f"[DB] Erro ao conectar: {e}")
         return None
 
-def execute_query(query, params=None, fetch=True):
-    #Executa uma query no banco de dados
+# Função genérica para executar queries
+def _run_query(query, params=None, fetch_mode="all"):
+
+    """
+    Função interna genérica para executar queries.
+    
+    fetch_mode:
+      - 'all'      -> retorna lista de registros (SELECT)
+      - 'one'      -> retorna um único registro ou None
+      - 'rowcount' -> retorna número de linhas afetadas (INSERT/UPDATE/DELETE)
+    """
+    # Abre conexão
     conn = get_db_connection()
     if not conn:
         return None
-    
+    # Define cursor
+    params = params or ()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+    # Execução da query
     try:
-        cursor = conn.cursor(cursor_factory=RealDictCursor)
-        cursor.execute(query, params or ())
-        
-        if fetch:
-            if query.strip().upper().startswith('SELECT'):
-                result = cursor.fetchall()
-            else:
-                result = cursor.rowcount
-            conn.commit()
-            return result
+        cursor.execute(query, params)
+    # Obtém resultado conforme modo
+        if fetch_mode == "all":
+            result = cursor.fetchall()
+        elif fetch_mode == "one":
+            result = cursor.fetchone()
+        elif fetch_mode == "rowcount":
+            result = cursor.rowcount
         else:
-            conn.commit()
-            return cursor.rowcount
+            result = None
+
+        conn.commit()
+        return result
     except Exception as e:
         conn.rollback()
-        print(f"ERRO SQL - Query: {query}")
-        print(f"ERRO SQL - Params: {params}")
-        print(f"ERRO SQL - Detalhes: {e}")
-        print(f"ERRO SQL - Tipo: {type(e).__name__}")
+        print(f"[DB] ERRO SQL - Query: {query}")
+        print(f"[DB] ERRO SQL - Params: {params}")
+        print(f"[DB] ERRO SQL - Detalhes: {e} ({type(e).__name__})")
         return None
     finally:
         cursor.close()
         conn.close()
 
+# Retorna todos os registros
+def fetch_all(query, params=None):
+    return _run_query(query, params, fetch_mode="all") or []
+
+# Retorna um único registro
+def fetch_one(query, params=None):
+    return _run_query(query, params, fetch_mode="one")
+
+# INSERT/UPDATE/DELETE
+def execute(query, params=None):
+    """INSERT/UPDATE/DELETE - retorna número de linhas afetadas ou None."""
+    return _run_query(query, params, fetch_mode="rowcount")
+
+# Contagem de registros
+# executa query de contagem
+def count(table_name, where_clause=None, params=None):
+    """Retorna COUNT(*) de uma tabela, com cláusula WHERE"""
+    query = f"SELECT COUNT(*) AS total FROM {table_name}"
+    # Adiciona cláusula WHERE se fornecida
+    if where_clause:
+        query += f" WHERE {where_clause}"
+    row = fetch_one(query, params)
+    return row["total"] if row else 0
+
+
 # ===========================
-# ROTAS DE AUTENTICAÇÃO
+# SENHAS
 # ===========================
 
-@views_bp.route('/')
+# Gerar hash de senha
+def generate_password_hash(password):
+    password_bytes = password.encode("utf-8")
+    salt = bcrypt.gensalt()
+    hashed = bcrypt.hashpw(password_bytes, salt)
+    return hashed.decode("utf-8")
+
+# Verificar senha
+def check_password_hash(hashed_password, password):
+    # Verifica se a senha corresponde ao hash armazenado
+    try:
+        password_bytes = password.encode("utf-8")
+        hashed_bytes = hashed_password.encode("utf-8")
+        return bcrypt.checkpw(password_bytes, hashed_bytes)
+    except Exception as e:
+        print(f"[AUTH] Erro na verificação de senha: {e}")
+        return False
+
+
+# ===========================
+# DECORATOR DE LOGIN
+# ===========================
+
+# Decorator para exigir login
+
+def login_required(view_func):
+    """Decorator simples para exigir login em rotas protegidas."""
+
+    @wraps(view_func)
+    def wrapper(*args, **kwargs):
+        if "user_id" not in session:
+            return redirect(url_for("views.login"))
+        return view_func(*args, **kwargs)
+
+    return wrapper
+
+
+# ===========================
+# AUTENTICAÇÃO
+# ===========================
+
+# ROTA RAIZ
+@views_bp.route("/")
 def index():
-    if 'user_id' not in session:
-        return redirect(url_for('views.login'))
-    return redirect(url_for('views.dashboard'))
+    if "user_id" not in session:
+        return redirect(url_for("views.login"))
+    return redirect(url_for("views.dashboard"))
 
-@views_bp.route('/login', methods=['GET', 'POST'])
+# LOGIN metodos GET e POST
+@views_bp.route("/login", methods=["GET", "POST"])
 def login():
-    if request.method == 'POST':
-        login_input = request.form.get('login')
-        senha = request.form.get('senha')
-        
-        # Validação básica
+    if request.method == "POST":
+        login_input = request.form.get("login")
+        senha = request.form.get("senha")
+# Validação básica
         if not login_input or not senha:
-            flash('Login e senha são obrigatórios', 'error')
-            return render_template('auth/login.html')
-        
-        # Buscar usuário por login
-        query = "SELECT id_usuario, login, nome, senha, perfil_enum FROM usuario WHERE login = %s"
-        user = execute_query(query, (login_input,))
-        
-        if user and len(user) > 0:
-            user = user[0]
-            # Verificar se a senha foi recuperada corretamente
-            if user['senha'] and check_password_hash(user['senha'], senha):
-                session['user_id'] = user['id_usuario']
-                session['user_name'] = user['nome']
-                session['user_profile'] = user['perfil_enum']
-                flash('Login realizado com sucesso!', 'success')
-                return redirect(url_for('views.dashboard'))
-        
-        flash('Login ou senha inválidos', 'error')
-    
-    return render_template('auth/login.html')
+            flash("Login e senha são obrigatórios", "error")
+            return render_template("auth/login.html")
+# Busca usuário no banco
+        user = fetch_one(
+            """
+            SELECT id_usuario, login, nome, senha, perfil_enum
+            FROM usuario
+            WHERE login = %s
+            """,
+            (login_input,),
+        )
+# Verifica senha correspondente ao usuário
+        if user and user["senha"] and check_password_hash(user["senha"], senha):
+            session["user_id"] = user["id_usuario"]
+            session["user_name"] = user["nome"]
+            session["user_profile"] = user["perfil_enum"]
 
-@views_bp.route('/registrar', methods=['GET', 'POST'])
+            flash("Login realizado com sucesso!", "success")
+            return redirect(url_for("views.dashboard"))
+
+        flash("Login ou senha inválidos", "error")
+
+    return render_template("auth/login.html")
+
+# REGISTRO
+@views_bp.route("/registrar", methods=["GET", "POST"])
 def registrar():
-    print(f"DEBUG - Método da requisição: {request.method}")
-    print(f"DEBUG - Dados do formulário: {request.form}")
-    
-    if request.method == 'POST':
-        nome = request.form.get('nome')
-        matricula = request.form.get('matricula')
-        email = request.form.get('email')
-        instituicao = request.form.get('instituicao')
-        login = request.form.get('login')
-        senha = request.form.get('senha')
-        perfil_enum = request.form.get('perfil_enum', 'MONITOR')
+    form_data = {}
+# Carrega dados do formulário se houver
+    if request.method == "POST":
+        form_data = request.form.to_dict()
+
+        nome = form_data.get("nome")
+        matricula = form_data.get("matricula")
+        email = form_data.get("email")
+        instituicao = form_data.get("instituicao")
+        login_input = form_data.get("login")
+        senha = form_data.get("senha")
+        perfil_enum = form_data.get("perfil_enum", "MONITOR")
+    # Validação básica
+        if not all([nome, matricula, email, instituicao, login_input, senha]):
+            flash("Todos os campos são obrigatórios!", "error")
+            return render_template("auth/register.html", form_data=form_data)
         
-        # Debug logs
-        print(f"DEBUG - Dados recebidos:")
-        print(f"Nome: {nome}")
-        print(f"Matricula: {matricula}")
-        print(f"Email: {email}")
-        print(f"Instituicao: {instituicao}")
-        print(f"Login: {login}")
-        print(f"Senha: {'***' if senha else 'None'}")
-        print(f"Perfil: {perfil_enum}")
-        
-        # Validação básica
-        if not all([nome, matricula, email, instituicao, login, senha]):
-            print("DEBUG - Erro: Campos obrigatórios faltando")
-            flash('Todos os campos são obrigatórios!', 'error')
-            return render_template('auth/register.html')
-        
-        # Verificar se já existe usuário com mesmo login, email ou matrícula
-        check_query = """
-            SELECT COUNT(*) as count FROM usuario 
+        # Verifica se já existe usuário com mesmo login, email ou matrícula
+        existing = fetch_one(
+            """
+            SELECT COUNT(*) AS count
+            FROM usuario
             WHERE login = %s OR email = %s OR matricula = %s
-        """
-        existing_user = execute_query(check_query, (login, email, matricula), fetch=True)
-        print(f"DEBUG - Verificação de usuário existente: {existing_user}")
-        
-        if existing_user and existing_user[0]['count'] > 0:
-            print("DEBUG - Erro: Usuário já existe")
-            flash('Usuário com este login, email ou matrícula já existe!', 'error')
-            return render_template('auth/register.html')
-        
+            """,
+            (login_input, email, matricula),
+        )
+        if existing and existing["count"] > 0:
+            flash("Usuário com este login, email ou matrícula já existe!", "error")
+            return render_template("auth/register.html", form_data=form_data)
+    # Gera hash da senha
         senha_hash = generate_password_hash(senha)
-        print(f"DEBUG - Hash da senha gerado: {'***' if senha_hash else 'None'}")
-        
-        query = """
+    # insere novo usuário
+        result = execute(
+            """
             INSERT INTO usuario (nome, matricula, email, instituicao, login, senha, perfil_enum)
             VALUES (%s, %s, %s, %s, %s, %s, %s::perfilenum)
-        """
-        
-        print(f"DEBUG - Executando query de inserção...")
-        result = execute_query(query, (nome, matricula, email, instituicao, login, senha_hash, perfil_enum), fetch=False)
-        print(f"DEBUG - Resultado da inserção: {result}")
-        
+            """,
+            (nome, matricula, email, instituicao, login_input, senha_hash, perfil_enum),
+        )
+    # se o resultado for positivo, redireciona para login
         if result and result > 0:
-            print("DEBUG - Cadastro realizado com sucesso!")
-            flash('Usuário cadastrado com sucesso!', 'success')
-            return redirect(url_for('views.login'))
-        else:
-            print("DEBUG - Erro na inserção")
-            flash('Erro ao cadastrar usuário. Tente novamente.', 'error')
-    
-    print("DEBUG - Renderizando template de registro")
-    return render_template('auth/register.html')
+            flash("Usuário cadastrado com sucesso!", "success")
+            return redirect(url_for("views.login"))
 
-@views_bp.route('/esqueci-senha')
+        flash("Erro ao cadastrar usuário. Tente novamente.", "error")
+        return render_template("auth/register.html", form_data=form_data)
+
+    return render_template("auth/register.html", form_data=form_data)
+
+# ESQUECI MINHA SENHA
+@views_bp.route("/esqueci-senha")
 def forgot_password():
-    return render_template('auth/forgot-password.html')
+    return render_template("auth/forgot-password.html")
 
-@views_bp.route('/logout')
+# LOGOUT
+@views_bp.route("/logout")
 def logout():
     session.clear()
-    flash('Logout realizado com sucesso!', 'info')
-    return redirect(url_for('views.login'))
+    flash("Logout realizado com sucesso!", "info")
+    return redirect(url_for("views.login"))
+
 
 # ===========================
 # DASHBOARD
 # ===========================
 
-@views_bp.route('/dashboard')
+
+@views_bp.route("/dashboard")
+@login_required
 def dashboard():
-    if 'user_id' not in session:
-        return redirect(url_for('views.login'))
-    
-    # Cria dicionário vazio
-    # Contar a quantidade
-    stats = {}
-    
-    # Total de usuários
-    result = execute_query("SELECT COUNT(*) as total FROM usuario")
-    stats['total_usuarios'] = result[0]['total'] if result else 0
-    
-    # Total de bancos
-    result = execute_query("SELECT COUNT(*) as total FROM banco")
-    stats['total_bancos'] = result[0]['total'] if result else 0
-    
-    # Total de agências
-    result = execute_query("SELECT COUNT(*) as total FROM agencia")
-    stats['total_agencias'] = result[0]['total'] if result else 0
-    
-    # Total de remessas
-    result = execute_query("SELECT COUNT(*) as total FROM remessa")
-    stats['total_remessas'] = result[0]['total'] if result else 0
-    
-    # Total de concedentes
-    result = execute_query("SELECT COUNT(*) as total FROM concedente")
-    stats['total_concedentes'] = result[0]['total'] if result else 0
-    
-    # Total de contas
-    result = execute_query("SELECT COUNT(*) as total FROM conta_convenio")
-    stats['total_contas'] = result[0]['total'] if result else 0
+    stats = {
+        "total_usuarios": count("usuario"),
+        "total_bancos": count("banco"),
+        "total_agencias": count("agencia"),
+        "total_remessas": count("remessa"),
+        "total_concedentes": count("concedente"),
+        "total_contas": count("conta_convenio"),
+    }
+    # Contagem por situação de remessa
+    remessas = {
+        "preparacao": count("remessa", "situacao = 'Em Preparação'"),
+        "enviado": count("remessa", "situacao = 'Enviado'"),
+        "aguardando": count("remessa", "situacao = 'Aguardando retorno'"),
+        "pendente": count("remessa", "situacao = 'Pendente de envio'"),
+        "aberta": count("remessa", "situacao = 'Conta Aberta'"),
+        "erro": count("remessa", "situacao = 'Erro'"),
+        "aprovado": count("remessa", "situacao = 'Aprovado'"),
+    }
 
-    # cria dicinário vazio
-    remessas = {}
-    
-    # Contagem de remessas por status
-    result = execute_query("SELECT COUNT(*) as total FROM remessa WHERE situacao = 'Em Preparação'")
-    remessas['preparacao'] = result[0]['total'] if result else 0
-    
-    result = execute_query("SELECT COUNT(*) as total FROM remessa WHERE situacao = 'Enviado'")
-    remessas['enviado'] = result[0]['total'] if result else 0
-    
-    result = execute_query("SELECT COUNT(*) as total FROM remessa WHERE situacao = 'Aguardando retorno'")
-    remessas['aguardando'] = result[0]['total'] if result else 0
-    
-    result = execute_query("SELECT COUNT(*) as total FROM remessa WHERE situacao = 'Pendente de envio'")
-    remessas['pendente'] = result[0]['total'] if result else 0
-    
-    result = execute_query("SELECT COUNT(*) as total FROM remessa WHERE situacao = 'Conta Aberta'")
-    remessas['aberta'] = result[0]['total'] if result else 0
-    
-    result = execute_query("SELECT COUNT(*) as total FROM remessa WHERE situacao = 'Erro'")
-    remessas['erro'] = result[0]['total'] if result else 0
+    return render_template("dashboard.html", stats=stats, remessas=remessas)
 
-    result = execute_query("SELECT COUNT(*) as total FROM remessa WHERE situacao = 'Aprovado'")
-    remessas['aprovado'] = result[0]['total'] if result else 0
-    
-    return render_template('dashboard.html', stats=stats, remessas=remessas)
 
 # ===========================
 # CRUD - BANCOS
 # ===========================
+# Adiciona filtro de busca se fornecido
 
-@views_bp.route('/bancos')
+
+
+@views_bp.route("/bancos")
+@login_required
 def bancos():
-    if 'user_id' not in session:
-        return redirect(url_for('views.login'))
-    
-    query = "SELECT * FROM banco ORDER BY nome"
-    bancos_list = execute_query(query)
-    
-    return render_template('bancos/list.html', bancos=bancos_list)
+    search_term = request.args.get("search", "").strip()
+    query = "SELECT * FROM banco"
+    params = []
+#CAST converte id_banco para texto para permitir busca parcial
+#ILIKE igenora maiúsculas/minúsculas
+    if search_term:
+        query += """
+ WHERE (
+        CAST(id_banco AS TEXT) ILIKE %s OR
+        nome ILIKE %s
+ )
+        """
+        like = f"%{search_term}%"
+        params.extend([like, like])
 
-@views_bp.route('/bancos/criar', methods=['GET', 'POST'])
+    query += " ORDER BY nome"
+
+    bancos_list = fetch_all(query, params)
+    return render_template(
+        "bancos/list.html",
+        bancos=bancos_list,
+        search_term=search_term,
+    )
+
+
+@views_bp.route("/bancos/criar", methods=["GET", "POST"])
+@login_required
 def criar_banco():
-    if 'user_id' not in session:
-        return redirect(url_for('views.login'))
-    
-    if request.method == 'POST':
-        nome = request.form.get('nome')
-        
-        query = "INSERT INTO banco (nome) VALUES (%s)"
-        result = execute_query(query, (nome,), fetch=False)
-        
-        if result:
-            flash('Banco criado com sucesso!', 'success')
-            return redirect(url_for('views.bancos'))
-        else:
-            flash('Erro ao criar banco.', 'error')
-    
-    return render_template('bancos/create.html')
+    form_data = {}
+# Carrega dados do formulário se houver
+    if request.method == "POST":
+        form_data = request.form.to_dict()
+        id_banco = form_data.get("id_banco")
+        nome = form_data.get("nome")
+    # Validação básica
+        if not id_banco or not nome:
+            flash("Código do Banco e Nome são obrigatórios.", "error")
+            return render_template("bancos/create.html", form_data=form_data)
+    # Tenta inserir novo banco
+        result = execute(
+            "INSERT INTO banco (id_banco, nome) VALUES (%s, %s)",
+            (id_banco, nome),
+        )
+    # Verifica resultado
+        if result and result > 0:
+            flash("Banco criado com sucesso!", "success")
+            return redirect(url_for("views.bancos"))
+    # Erro ao inserir
+        flash("Erro ao criar banco. Verifique se o código já existe.", "error")
+        return render_template("bancos/create.html", form_data=form_data)
 
-@views_bp.route('/bancos/editar/<int:id_banco>', methods=['GET', 'POST'])
+    return render_template("bancos/create.html", form_data=form_data)
+
+
+@views_bp.route("/bancos/editar/<int:id_banco>", methods=["GET", "POST"])
+@login_required
 def editar_banco(id_banco):
-    if 'user_id' not in session:
-        return redirect(url_for('views.login'))
-    
-    if request.method == 'POST':
-        nome = request.form.get('nome')
-        
-        query = "UPDATE banco SET nome = %s WHERE id_banco = %s"
-        result = execute_query(query, (nome, id_banco), fetch=False)
-        
-        if result:
-            flash('Banco atualizado com sucesso!', 'success')
-            return redirect(url_for('views.bancos'))
-        else:
-            flash('Erro ao atualizar banco.', 'error')
-    
-    # GET - Buscar dados do banco para edição
-    query = "SELECT * FROM banco WHERE id_banco = %s"
-    banco = execute_query(query, (id_banco,))
-    
-    if not banco:
-        flash('Banco não encontrado.', 'error')
-        return redirect(url_for('views.bancos'))
-    
-    return render_template('bancos/edit.html', banco=banco[0])
+    if request.method == "POST":
+        nome = request.form.get("nome")
+        result = execute(
+            "UPDATE banco SET nome = %s WHERE id_banco = %s",
+            (nome, id_banco),
+        )
 
-@views_bp.route('/bancos/excluir/<int:id_banco>', methods=['POST'])
+        if result and result > 0:
+            flash("Banco atualizado com sucesso!", "success")
+            return redirect(url_for("views.bancos"))
+
+        flash("Erro ao atualizar banco.", "error")
+
+    banco = fetch_one("SELECT * FROM banco WHERE id_banco = %s", (id_banco,))
+    if not banco:
+        flash("Banco não encontrado.", "error")
+        return redirect(url_for("views.bancos"))
+    # RENDERIZA FORMULÁRIO COM DADOS ATUAIS
+    return render_template("bancos/edit.html", banco=banco)
+
+
+@views_bp.route("/bancos/excluir/<int:id_banco>", methods=["POST"])
+@login_required
 def excluir_banco(id_banco):
-    if 'user_id' not in session:
-        return redirect(url_for('views.login'))
-    
-    query = "DELETE FROM banco WHERE id_banco = %s"
-    result = execute_query(query, (id_banco,), fetch=False)
-    
-    if result:
-        flash('Banco excluído com sucesso!', 'success')
+    print(f"[DEBUG] Tentando excluir banco id_banco={id_banco}")
+
+    # SELECT na própria tabela
+    banco = fetch_one("SELECT * FROM banco WHERE id_banco = %s", (id_banco,))
+    print(f"[DEBUG] Banco encontrado: {banco}")
+
+    if not banco:
+        flash("Banco não encontrado (id inválido).", "error")
+        return redirect(url_for("views.bancos"))
+
+    # Verifica dependência: agência vinculada
+    agencia_vinculada = fetch_one(
+        "SELECT 1 FROM agencia WHERE id_banco = %s LIMIT 1",
+        (id_banco,),
+    )
+    if agencia_vinculada:
+        flash(
+            "Não é possível excluir o banco: existem agências vinculadas a ele.",
+            "error",
+        )
+        return redirect(url_for("views.bancos"))
+
+    # Tenta excluir
+    try:
+        result = execute("DELETE FROM banco WHERE id_banco = %s", (id_banco,))
+        print(f"[DEBUG] Resultado do DELETE banco: {result}")
+    except Exception as e:
+        print(f"[ERRO EXCLUIR BANCO] {e}")
+        flash("Erro ao excluir banco (restrição no banco de dados).", "error")
+        return redirect(url_for("views.bancos"))
+
+    if result and result > 0:
+        flash("Excluído com sucesso!", "success")
     else:
-        flash('Erro ao excluir banco.', 'error')
-    
-    return redirect(url_for('views.bancos'))
+        flash("Erro ao excluir banco.", "error")
+
+    return redirect(url_for("views.bancos"))
+
+
+
 
 # ===========================
 # CRUD - AGÊNCIAS
 # ===========================
 
-@views_bp.route('/agencias')
-def agencias():
-    if 'user_id' not in session:
-        return redirect(url_for('views.login'))
-    
-    query = """
-        SELECT *,
-        (SELECT nome FROM banco WHERE banco.id_banco = a.id_banco) AS banco_nome
-        FROM agencia a
-        ORDER BY a.nome_agencia;
-    """
-    agencias_list = execute_query(query)
-    
-    return render_template('agencias/list.html', agencias=agencias_list)
 
-@views_bp.route('/agencias/criar', methods=['GET', 'POST'])
+@views_bp.route("/agencias")
+@login_required
+def agencias():
+    search_term = request.args.get("search", "").strip()
+    base_query = """
+        SELECT a.*,
+               (SELECT nome FROM banco WHERE banco.id_banco = a.id_banco) AS banco_nome
+          FROM agencia a
+    """
+    params = []
+    filters = []
+
+    if search_term:
+        filters.append(
+            """
+            (
+                a.nome_agencia ILIKE %s OR
+                CAST(a.num_agencia AS TEXT) ILIKE %s OR
+                CAST(a.dv_agencia AS TEXT) ILIKE %s OR
+                a.cidade ILIKE %s OR
+                a.uf ILIKE %s OR
+                (SELECT nome FROM banco WHERE banco.id_banco = a.id_banco) ILIKE %s
+            )
+            """
+        )
+        like = f"%{search_term}%"
+        params.extend([like, like, like, like, like, like])
+
+    if filters:
+        base_query += " WHERE " + " AND ".join(filters)
+
+    base_query += " ORDER BY a.nome_agencia"
+
+    agencias_list = fetch_all(base_query, params)
+    return render_template(
+        "agencias/list.html",
+        agencias=agencias_list,
+        search_term=search_term,
+    )
+
+
+@views_bp.route("/agencias/criar", methods=["GET", "POST"])
+@login_required
 def criar_agencia():
-    if 'user_id' not in session:
-        return redirect(url_for('views.login'))
-    
-    if request.method == 'POST':
-        nome_agencia = request.form.get('nome_agencia')
-        num_agencia = request.form.get('num_agencia')
-        dv_agencia = request.form.get('dv_agencia')
-        logadouro = request.form.get('logadouro')
-        cidade = request.form.get('cidade')
-        uf = request.form.get('uf')
-        id_banco = request.form.get('id_banco')
-        
-        query = """
+    form_data = {}
+
+    # Carrega bancos sempre
+    bancos = fetch_all("SELECT * FROM banco ORDER BY nome")
+    # Carrega dados do formulário se houver
+    if request.method == "POST":
+        form_data = request.form.to_dict()
+        nome_agencia = form_data.get("nome_agencia")
+        num_agencia = form_data.get("num_agencia")
+        dv_agencia = form_data.get("dv_agencia")
+        logradouro = form_data.get("logadouro")
+        cidade = form_data.get("cidade")
+        uf = form_data.get("uf")
+        id_banco = form_data.get("id_banco")
+
+        # Validação básica
+        if not all([nome_agencia, num_agencia, dv_agencia, cidade, uf, id_banco]):
+            flash("Preencha todos os campos obrigatórios.", "error")
+            return render_template("agencias/create.html", bancos=bancos, form_data=form_data)
+
+        result = execute(
+            """
             INSERT INTO agencia (nome_agencia, num_agencia, dv_agencia, logadouro, cidade, uf, id_banco)
             VALUES (%s, %s, %s, %s, %s, %s, %s)
-        """
-        result = execute_query(query, (nome_agencia, num_agencia, dv_agencia, logadouro, cidade, uf, id_banco), fetch=False)
-        
-        if result:
-            flash('Agência criada com sucesso!', 'success')
-            return redirect(url_for('views.agencias'))
-        else:
-            flash('Erro ao criar agência.', 'error')
-    
-    # Buscar bancos para o formulário
-    query_bancos = "SELECT * FROM banco ORDER BY nome"
-    bancos = execute_query(query_bancos)
-    
-    return render_template('agencias/create.html', bancos=bancos)
+            """,
+            (nome_agencia, num_agencia, dv_agencia, logradouro, cidade, uf, id_banco),
+        )
 
-@views_bp.route('/agencias/editar/<int:id_agencia>', methods=['GET', 'POST'])
+        if result and result > 0:
+            flash("Agência criada com sucesso!", "success")
+            return redirect(url_for("views.agencias"))
+
+        flash("Erro ao criar agência.", "error")
+        return render_template("agencias/create.html", bancos=bancos, form_data=form_data)
+
+    return render_template("agencias/create.html", bancos=bancos, form_data=form_data)
+
+
+@views_bp.route("/agencias/editar/<int:id_agencia>", methods=["GET", "POST"])
+@login_required
 def editar_agencia(id_agencia):
-    if 'user_id' not in session:
-        return redirect(url_for('views.login'))
-    
-    if request.method == 'POST':
-        nome_agencia = request.form.get('nome_agencia')
-        num_agencia = request.form.get('num_agencia')
-        dv_agencia = request.form.get('dv_agencia')
-        logadouro = request.form.get('logadouro')
-        cidade = request.form.get('cidade')
-        uf = request.form.get('uf')
-        id_banco = request.form.get('id_banco')
-        
-        query = """
-            UPDATE agencia 
-            SET nome_agencia = %s, num_agencia = %s, dv_agencia = %s, 
-                logadouro = %s, cidade = %s, uf = %s, id_banco = %s
-            WHERE id_agencia = %s
+    # Buscar dados da agência
+    agencia = fetch_one(
         """
-        result = execute_query(query, (nome_agencia, num_agencia, dv_agencia, logadouro, cidade, uf, id_banco, id_agencia), fetch=False)
-        
-        if result:
-            flash('Agência atualizada com sucesso!', 'success')
-            return redirect(url_for('views.agencias'))
-        else:
-            flash('Erro ao atualizar agência.', 'error')
-    
-    # GET - Buscar dados da agência para edição
-    query = """
-        SELECT *,
-        (SELECT nome FROM banco WHERE banco.id_banco = agencia.id_banco) AS banco_nome
-        FROM agencia
-        WHERE id_agencia = %s;
-    """
-    agencia = execute_query(query, (id_agencia,))
-    
-    # Buscar bancos para o formulário
-    query_bancos = "SELECT * FROM banco ORDER BY nome"
-    bancos = execute_query(query_bancos)
-    
+        SELECT a.*,
+               (SELECT nome FROM banco WHERE banco.id_banco = a.id_banco) AS banco_nome
+        FROM agencia a
+        WHERE a.id_agencia = %s;
+        """,
+        (id_agencia,),
+    )
     if not agencia:
-        flash('Agência não encontrada.', 'error')
-        return redirect(url_for('views.agencias'))
+        flash("Agência não encontrada.", "error")
+        return redirect(url_for("views.agencias"))
     
-    return render_template('agencias/edit.html', agencia=agencia[0], bancos=bancos)
+    # Carregar bancos para o select
+    bancos = fetch_all("SELECT * FROM banco ORDER BY nome")
 
-@views_bp.route('/agencias/excluir/<int:id_agencia>', methods=['POST'])
+    if request.method == "POST":
+        nome_agencia = request.form.get("nome_agencia")
+        num_agencia = request.form.get("num_agencia")
+        dv_agencia = request.form.get("dv_agencia")
+        logradouro = request.form.get("logadouro")
+        cidade = request.form.get("cidade")
+        uf = request.form.get("uf")
+        id_banco = request.form.get("id_banco")
+    # editando agência
+        result = execute(
+            """
+            UPDATE agencia
+               SET nome_agencia = %s,
+                   num_agencia  = %s,
+                   dv_agencia   = %s,
+                   logadouro    = %s,
+                   cidade       = %s,
+                   uf           = %s,
+                   id_banco     = %s
+             WHERE id_agencia   = %s
+            """,
+            (nome_agencia, num_agencia, dv_agencia, logradouro, cidade, uf, id_banco, id_agencia),
+        )
+
+        if result and result > 0:
+            flash("Agência atualizada com sucesso!", "success")
+            return redirect(url_for("views.agencias"))
+
+        flash("Erro ao atualizar agência.", "error")
+
+    return render_template("agencias/edit.html", agencia=agencia, bancos=bancos)
+
+
+@views_bp.route("/agencias/excluir/<int:id_agencia>", methods=["POST"])
+@login_required
 def excluir_agencia(id_agencia):
-    if 'user_id' not in session:
-        return redirect(url_for('views.login'))
-    
-    query = "DELETE FROM agencia WHERE id_agencia = %s"
-    result = execute_query(query, (id_agencia,), fetch=False)
-    
-    if result:
-        flash('Agência excluída com sucesso!', 'success')
+    print(f"[DEBUG] Tentando excluir agência id_agencia={id_agencia}")
+
+    # SELECT na própria tabela
+    agencia = fetch_one(
+        "SELECT * FROM agencia WHERE id_agencia = %s",
+        (id_agencia,),
+    )
+    print(f"[DEBUG] Agência encontrada: {agencia}")
+
+    if not agencia:
+        flash("Agência não encontrada (id inválido).", "error")
+        return redirect(url_for("views.agencias"))
+
+    # Verifica dependência: conta_convenio vinculada
+    conta_vinculada = fetch_one(
+        "SELECT 1 FROM conta_convenio WHERE id_agencia = %s LIMIT 1",
+        (id_agencia,),
+    )
+    if conta_vinculada:
+        flash(
+            "Não é possível excluir a agência: existem contas de convênio vinculadas.",
+            "error",
+        )
+        return redirect(url_for("views.agencias"))
+
+    # Tenta excluir
+    try:
+        result = execute("DELETE FROM agencia WHERE id_agencia = %s", (id_agencia,))
+        print(f"[DEBUG] Resultado do DELETE agência: {result}")
+    except Exception as e:
+        print(f"[ERRO EXCLUIR AGENCIA] {e}")
+        flash("Erro ao excluir agência (restrição no banco de dados).", "error")
+        return redirect(url_for("views.agencias"))
+
+    if result and result > 0:
+        flash("Excluído com sucesso!", "success")
     else:
-        flash('Erro ao excluir agência.', 'error')
-    
-    return redirect(url_for('views.agencias'))
+        flash("Erro ao excluir agência.", "error")
+
+    return redirect(url_for("views.agencias"))
+
+
 
 # ===========================
 # CRUD - CONCEDENTES
 # ===========================
 
-@views_bp.route('/concedentes')
-def concedentes():
-    if 'user_id' not in session:
-        return redirect(url_for('views.login'))
-    
-    query = "SELECT * FROM concedente ORDER BY nome"
-    concedentes_list = execute_query(query)
-    
-    return render_template('concedentes/list.html', concedentes=concedentes_list)
 
-@views_bp.route('/concedentes/criar', methods=['GET', 'POST'])
+@views_bp.route("/concedentes")
+@login_required
+def concedentes():
+    search_term = request.args.get("search", "").strip()
+    query = "SELECT * FROM concedente"
+    params = []
+
+    if search_term:
+        query += """
+ WHERE (
+        CAST(codigo_secretaria AS TEXT) ILIKE %s OR
+        sigla ILIKE %s OR
+        nome ILIKE %s
+ )
+        """
+        like = f"%{search_term}%"
+        params.extend([like, like, like])
+
+    query += " ORDER BY nome"
+
+    concedentes_list = fetch_all(query, params)
+    return render_template(
+        "concedentes/list.html",
+        concedentes=concedentes_list,
+        search_term=search_term,
+    )
+
+
+@views_bp.route("/concedentes/criar", methods=["GET", "POST"])
+@login_required
 def criar_concedente():
-    if 'user_id' not in session:
-        return redirect(url_for('views.login'))
-    
-    if request.method == 'POST':
-        codigo_secretaria = request.form.get('codigo_secretaria')
-        sigla = request.form.get('sigla')
-        nome = request.form.get('nome')
-        
-        query = """
+    form_data = {}
+    # Carrega dados do formulário se houver
+    if request.method == "POST":
+        form_data = request.form.to_dict()
+        codigo_secretaria = form_data.get("codigo_secretaria")
+        sigla = form_data.get("sigla")
+        nome = form_data.get("nome")
+
+        # Validação básica
+        if not all([codigo_secretaria, sigla, nome]):
+            flash("Todos os campos são obrigatórios.", "error")
+            return render_template("concedentes/create.html", form_data=form_data)
+
+        result = execute(
+            """
             INSERT INTO concedente (codigo_secretaria, sigla, nome)
             VALUES (%s, %s, %s)
-        """
-        result = execute_query(query, (codigo_secretaria, sigla, nome), fetch=False)
-        
-        if result:
-            flash('Concedente criado com sucesso!', 'success')
-            return redirect(url_for('views.concedentes'))
-        else:
-            flash('Erro ao criar concedente.', 'error')
-    
-    return render_template('concedentes/create.html')
+            """,
+            (codigo_secretaria, sigla, nome),
+        )
 
-@views_bp.route('/concedentes/editar/<int:id_concedente>', methods=['GET', 'POST'])
+        # Verifica resultado
+        if result and result > 0:
+            flash("Concedente criado com sucesso!", "success")
+            return redirect(url_for("views.concedentes"))
+
+        flash("Erro ao criar concedente. Verifique os dados e tente novamente.", "error")
+        return render_template("concedentes/create.html", form_data=form_data)
+
+    return render_template("concedentes/create.html", form_data=form_data)
+
+
+@views_bp.route("/concedentes/editar/<int:id_concedente>", methods=["GET", "POST"])
+@login_required
 def editar_concedente(id_concedente):
-    if 'user_id' not in session:
-        return redirect(url_for('views.login'))
-    
-    if request.method == 'POST':
-        codigo_secretaria = request.form.get('codigo_secretaria')
-        sigla = request.form.get('sigla')
-        nome = request.form.get('nome')
-        
-        query = """
-            UPDATE concedente 
-            SET codigo_secretaria = %s, sigla = %s, nome = %s
-            WHERE id_concedente = %s
-        """
-        result = execute_query(query, (codigo_secretaria, sigla, nome, id_concedente), fetch=False)
-        
-        if result:
-            flash('Concedente atualizado com sucesso!', 'success')
-            return redirect(url_for('views.concedentes'))
-        else:
-            flash('Erro ao atualizar concedente.', 'error')
-    
-    # GET - Buscar dados do concedente para edição
-    query = "SELECT * FROM concedente WHERE id_concedente = %s"
-    concedente = execute_query(query, (id_concedente,))
-    
+    concedente = fetch_one(
+        "SELECT * FROM concedente WHERE id_concedente = %s",
+        (id_concedente,),
+    )
     if not concedente:
-        flash('Concedente não encontrado.', 'error')
-        return redirect(url_for('views.concedentes'))
-    
-    return render_template('concedentes/edit.html', concedente=concedente[0])
+        flash("Concedente não encontrado.", "error")
+        return redirect(url_for("views.concedentes"))
 
-@views_bp.route('/concedentes/excluir/<int:id_concedente>', methods=['POST'])
+    if request.method == "POST":
+        codigo_secretaria = request.form.get("codigo_secretaria")
+        sigla = request.form.get("sigla")
+        nome = request.form.get("nome")
+
+        result = execute(
+            """
+            UPDATE concedente
+               SET codigo_secretaria = %s,
+                   sigla             = %s,
+                   nome              = %s
+             WHERE id_concedente     = %s
+            """,
+            (codigo_secretaria, sigla, nome, id_concedente),
+        )
+
+        if result and result > 0:
+            flash("Concedente atualizado com sucesso!", "success")
+            return redirect(url_for("views.concedentes"))
+
+        flash("Erro ao atualizar concedente.", "error")
+
+    return render_template("concedentes/edit.html", concedente=concedente)
+
+
+@views_bp.route("/concedentes/excluir/<int:id_concedente>", methods=["POST"])
+@login_required
 def excluir_concedente(id_concedente):
-    if 'user_id' not in session:
-        return redirect(url_for('views.login'))
-    
-    query = "DELETE FROM concedente WHERE id_concedente = %s"
-    result = execute_query(query, (id_concedente,), fetch=False)
-    
-    if result:
-        flash('Concedente excluído com sucesso!', 'success')
+    print(f"[DEBUG] Tentando excluir concedente id_concedente={id_concedente}")
+
+    # 1) SELECT na própria tabela
+    concedente = fetch_one(
+        "SELECT * FROM concedente WHERE id_concedente = %s",
+        (id_concedente,),
+    )
+    print(f"[DEBUG] Concedente encontrado: {concedente}")
+
+    if not concedente:
+        flash("Concedente não encontrado.", "error")
+        return redirect(url_for("views.concedentes"))
+
+    # 2) Verifica dependência: remessas vinculadas
+    remessa_vinculada = fetch_one(
+        "SELECT 1 FROM remessa WHERE id_concedente = %s LIMIT 1",
+        (id_concedente,),
+    )
+    if remessa_vinculada:
+        flash(
+            "Não é possível excluir o concedente: existem remessas vinculadas a ele.",
+            "error",
+        )
+        return redirect(url_for("views.concedentes"))
+
+    # 3) Tenta excluir
+    try:
+        result = execute(
+            "DELETE FROM concedente WHERE id_concedente = %s",
+            (id_concedente,),
+        )
+        print(f"[DEBUG] Resultado do DELETE concedente: {result}")
+    except Exception as e:
+        print(f"[ERRO EXCLUIR CONCEDENTE] {e}")
+        flash("Erro ao excluir concedente (restrição no banco de dados).", "error")
+        return redirect(url_for("views.concedentes"))
+
+    if result and result > 0:
+        flash("Excluído com sucesso!", "success")
     else:
-        flash('Erro ao excluir concedente.', 'error')
-    
-    return redirect(url_for('views.concedentes'))
+        flash("Erro ao excluir concedente.", "error")
+
+    return redirect(url_for("views.concedentes"))
+
+
+
 
 # ===========================
 # CRUD - USUÁRIOS
 # ===========================
 
-@views_bp.route('/usuarios')
-def usuarios():
-    if 'user_id' not in session:
-        return redirect(url_for('views.login'))
-    
-    query = "SELECT * FROM usuario ORDER BY nome"
-    usuarios_list = execute_query(query)
-    
-    return render_template('usuarios/list.html', usuarios=usuarios_list)
 
-@views_bp.route('/usuarios/criar', methods=['GET', 'POST'])
+@views_bp.route("/usuarios")
+@login_required
+def usuarios():
+    search_term = request.args.get("search", "").strip()
+    query = "SELECT * FROM usuario"
+    params = []
+
+    if search_term:
+        query += """
+ WHERE (
+        nome ILIKE %s OR
+        login ILIKE %s OR
+        email ILIKE %s OR
+        instituicao ILIKE %s OR
+        CAST(matricula AS TEXT) ILIKE %s OR
+        perfil_enum::TEXT ILIKE %s
+ )
+        """
+        like = f"%{search_term}%"
+        params.extend([like, like, like, like, like, like])
+
+    query += " ORDER BY nome"
+
+    usuarios_list = fetch_all(query, params)
+    return render_template(
+        "usuarios/list.html",
+        usuarios=usuarios_list,
+        search_term=search_term,
+    )
+
+
+@views_bp.route("/usuarios/criar", methods=["GET", "POST"])
+@login_required
 def criar_usuario():
-    if 'user_id' not in session:
-        return redirect(url_for('views.login'))
-    
-    if request.method == 'POST':
-        nome = request.form.get('nome')
-        matricula = request.form.get('matricula')
-        email = request.form.get('email')
-        instituicao = request.form.get('instituicao')
-        login = request.form.get('login')
-        senha = request.form.get('senha')
-        perfil_enum = request.form.get('perfil_enum', 'MONITOR')
-        
+    form_data = {}
+
+    if request.method == "POST":
+        form_data = request.form.to_dict()
+        nome = form_data.get("nome")
+        matricula = form_data.get("matricula")
+        email = form_data.get("email")
+        instituicao = form_data.get("instituicao")
+        login_input = form_data.get("login")
+        senha = form_data.get("senha")
+        perfil_enum = form_data.get("perfil_enum", "MONITOR")
+
+        if not all([nome, matricula, email, instituicao, login_input, senha]):
+            flash("Todos os campos são obrigatórios.", "error")
+            return render_template("usuarios/create.html", form_data=form_data)
+
         senha_hash = generate_password_hash(senha)
-        
-        query = """
+
+        result = execute(
+            """
             INSERT INTO usuario (nome, matricula, email, instituicao, login, senha, perfil_enum)
             VALUES (%s, %s, %s, %s, %s, %s, %s::perfilenum)
-        """
-        result = execute_query(query, (nome, matricula, email, instituicao, login, senha_hash, perfil_enum), fetch=False)
-        
-        if result:
-            flash('Usuário criado com sucesso!', 'success')
-            return redirect(url_for('views.usuarios'))
-        else:
-            flash('Erro ao criar usuário.', 'error')
-    
-    return render_template('usuarios/create.html')
+            """,
+            (nome, matricula, email, instituicao, login_input, senha_hash, perfil_enum),
+        )
 
-@views_bp.route('/usuarios/editar/<int:id_usuario>', methods=['GET', 'POST'])
+        if result and result > 0:
+            flash("Usuário criado com sucesso!", "success")
+            return redirect(url_for("views.usuarios"))
+
+        flash("Erro ao criar usuário. Verifique se o login, e-mail ou matrícula já existem.", "error")
+        return render_template("usuarios/create.html", form_data=form_data)
+
+    return render_template("usuarios/create.html", form_data=form_data)
+
+
+@views_bp.route("/usuarios/editar/<int:id_usuario>", methods=["GET", "POST"])
+@login_required
 def editar_usuario(id_usuario):
-    if 'user_id' not in session:
-        return redirect(url_for('views.login'))
-    
-    if request.method == 'POST':
-        nome = request.form.get('nome')
-        matricula = request.form.get('matricula')
-        email = request.form.get('email')
-        instituicao = request.form.get('instituicao')
-        login = request.form.get('login')
-        perfil_enum = request.form.get('perfil_enum')
-        nova_senha = request.form.get('nova_senha')
-        
-        # Se nova senha foi fornecida, inclua na atualização
+    usuario = fetch_one("SELECT * FROM usuario WHERE id_usuario = %s", (id_usuario,))
+    if not usuario:
+        flash("Usuário não encontrado.", "error")
+        return redirect(url_for("views.usuarios"))
+
+    form_data = usuario.copy()
+
+    if request.method == "POST":
+        form_data = request.form.to_dict()
+        nome = form_data.get("nome")
+        matricula = form_data.get("matricula")
+        email = form_data.get("email")
+        instituicao = form_data.get("instituicao")
+        login_input = form_data.get("login")
+        perfil_enum = form_data.get("perfil_enum", usuario.get("perfil_enum"))
+        nova_senha = form_data.get("nova_senha")
+
+        if not all([nome, matricula, email, instituicao, login_input]):
+            flash("Todos os campos obrigatórios devem ser preenchidos.", "error")
+            # Preenche usuario exibido com o que o usuário digitou
+            usuario_atualizado = {**usuario, **form_data}
+            return render_template(
+                "usuarios/edit.html",
+                usuario=usuario_atualizado,
+            )
+
         if nova_senha:
             senha_hash = generate_password_hash(nova_senha)
-            query = """
-                UPDATE usuario 
-                SET nome = %s, matricula = %s, email = %s, instituicao = %s, 
-                    login = %s, perfil_enum = %s::perfilenum, senha = %s
-                WHERE id_usuario = %s
-            """
-            result = execute_query(query, (nome, matricula, email, instituicao, login, perfil_enum, senha_hash, id_usuario), fetch=False)
+            result = execute(
+                """
+                UPDATE usuario
+                   SET nome        = %s,
+                       matricula   = %s,
+                       email       = %s,
+                       instituicao = %s,
+                       login       = %s,
+                       perfil_enum = %s::perfilenum,
+                       senha       = %s
+                 WHERE id_usuario  = %s
+                """,
+                (nome, matricula, email, instituicao, login_input, perfil_enum, senha_hash, id_usuario),
+            )
         else:
-            query = """
-                UPDATE usuario 
-                SET nome = %s, matricula = %s, email = %s, instituicao = %s, 
-                    login = %s, perfil_enum = %s::perfilenum
-                WHERE id_usuario = %s
-            """
-            result = execute_query(query, (nome, matricula, email, instituicao, login, perfil_enum, id_usuario), fetch=False)
-        #
-        if result:
-            flash('Usuário atualizado com sucesso!', 'success')
-            return redirect(url_for('views.usuarios'))
-        else:
-            flash('Erro ao atualizar usuário.', 'error')
-    
-    # GET - Buscar dados do usuário para edição
-    query = "SELECT * FROM usuario WHERE id_usuario = %s"
-    usuario = execute_query(query, (id_usuario,))
-    
-    if not usuario:
-        flash('Usuário não encontrado.', 'error')
-        return redirect(url_for('views.usuarios'))
-    
-    return render_template('usuarios/edit.html', usuario=usuario[0])
+            result = execute(
+                """
+                UPDATE usuario
+                   SET nome        = %s,
+                       matricula   = %s,
+                       email       = %s,
+                       instituicao = %s,
+                       login       = %s,
+                       perfil_enum = %s::perfilenum
+                 WHERE id_usuario  = %s
+                """,
+                (nome, matricula, email, instituicao, login_input, perfil_enum, id_usuario),
+            )
 
-@views_bp.route('/usuarios/excluir/<int:id_usuario>', methods=['POST'])
+        if result and result > 0:
+            flash("Usuário atualizado com sucesso!", "success")
+            return redirect(url_for("views.usuarios"))
+
+        flash("Erro ao atualizar usuário.", "error")
+        usuario_atualizado = {**usuario, **form_data}
+        return render_template("usuarios/edit.html", usuario=usuario_atualizado)
+
+    return render_template("usuarios/edit.html", usuario=usuario)
+
+
+@views_bp.route("/usuarios/excluir/<int:id_usuario>", methods=["POST"])
+@login_required
 def excluir_usuario(id_usuario):
-    if 'user_id' not in session:
-        return redirect(url_for('views.login'))
-    
-    query = "DELETE FROM usuario WHERE id_usuario = %s"
-    result = execute_query(query, (id_usuario,), fetch=False)
-    
-    if result:
-        flash('Usuário excluído com sucesso!', 'success')
+    print(f"[DEBUG] Tentando excluir usuário id_usuario={id_usuario}")
+
+    # 1) SELECT na própria tabela
+    usuario = fetch_one("SELECT * FROM usuario WHERE id_usuario = %s", (id_usuario,))
+    print(f"[DEBUG] Usuário encontrado: {usuario}")
+
+    if not usuario:
+        flash("Usuário não encontrado.", "error")
+        return redirect(url_for("views.usuarios"))
+
+    # 2) Verifica dependência: remessas vinculadas
+    remessa_vinculada = fetch_one(
+        "SELECT 1 FROM remessa WHERE id_usuario = %s LIMIT 1",
+        (id_usuario,),
+    )
+    if remessa_vinculada:
+        flash(
+            "Não é possível excluir o usuário: existem remessas vinculadas a ele.",
+            "error",
+        )
+        return redirect(url_for("views.usuarios"))
+
+    # 3) Tenta excluir
+    try:
+        result = execute("DELETE FROM usuario WHERE id_usuario = %s", (id_usuario,))
+        print(f"[DEBUG] Resultado do DELETE usuário: {result}")
+    except Exception as e:
+        print(f"[ERRO EXCLUIR USUARIO] {e}")
+        flash("Erro ao excluir usuário (restrição no banco de dados).", "error")
+        return redirect(url_for("views.usuarios"))
+
+    if result and result > 0:
+        flash("Excluído com sucesso!", "success")
     else:
-        flash('Erro ao excluir usuário.', 'error')
-    
-    return redirect(url_for('views.usuarios'))
+        flash("Erro ao excluir usuário.", "error")
+
+    return redirect(url_for("views.usuarios"))
+
+
 
 # ===========================
 # CRUD - REMESSAS
 # ===========================
 
-@views_bp.route('/remessas')
+
+@views_bp.route("/remessas")
+@login_required
 def remessas():
-    if 'user_id' not in session:
-        return redirect(url_for('views.login'))
-    
-    query = """
-       SELECT
-        r.*,
-  (
-    SELECT ag.nome_agencia 
-    FROM agencia ag
-    WHERE ag.id_agencia = (
-      SELECT MIN(cc.id_agencia)
-      FROM conta_convenio cc
-      WHERE cc.id_remessa = r.id_remessa
-    )
-  ) AS nome_agencia,
+    # Filtros de busca
+    search_term = request.args.get("search", "").strip()
+    # data a partir de
+    date_from = request.args.get("date_from", "").strip()
 
-  (SELECT c.nome FROM concedente c WHERE c.id_concedente = r.id_concedente) AS concedente_nome,
-  (SELECT u.nome FROM usuario  u WHERE u.id_usuario    = r.id_usuario)    AS usuario_nome,
-  (SELECT b.nome FROM banco    b WHERE b.id_banco      = r.id_banco)      AS banco_nome
-FROM remessa r
-ORDER BY r.dt_remessa DESC;
-
-    """ 
-    remessas_list = execute_query(query)
-    
-    return render_template('remessas/list.html', remessas=remessas_list)
-
-@views_bp.route('/remessas/criar', methods=['GET', 'POST'])
-def criar_remessa():
-    if 'user_id' not in session:
-        return redirect(url_for('views.login'))
-    
-    if request.method == 'POST':
-        num_processo = request.form.get('num_processo')
-        nome_proponente = request.form.get('nome_proponente')
-        cpf_cnpj = request.form.get('cpf_cnpj')
-        num_convenio = request.form.get('num_convenio')
-        situacao = request.form.get('situacao', 'Em Preparação')
-        id_concedente = request.form.get('id_concedente')
-        id_banco = request.form.get('id_banco')
-        
-        # Validação básica
-        if not all([num_processo, nome_proponente, cpf_cnpj, num_convenio, id_concedente]):
-            flash('Todos os campos obrigatórios devem ser preenchidos!', 'error')
-            # Buscar dados para formulário novamente
-            query_concedentes = "SELECT * FROM concedente ORDER BY nome"
-            concedentes = execute_query(query_concedentes)
-            query_bancos = "SELECT * FROM banco ORDER BY nome"
-            bancos = execute_query(query_bancos)
-            return render_template('remessas/create.html', concedentes=concedentes, bancos=bancos)
-        
-        # Calcular próximo num_remessa automaticamente
-        query_max = "SELECT COALESCE(MAX(num_remessa), 0) + 1 as proximo_num FROM remessa"
-        resultado_max = execute_query(query_max)
-        proximo_num_remessa = resultado_max[0]['proximo_num'] if resultado_max else 1
-        
-        query = """
-            INSERT INTO remessa (num_processo, nome_proponente, cpf_cnpj, num_convenio, 
-                               situacao, num_remessa, id_concedente, id_usuario, id_banco)
-            VALUES (%s, %s, %s, %s, %s::situacao_enum, %s, %s, %s, %s)
-        """
-        result = execute_query(query, (num_processo, nome_proponente, cpf_cnpj, num_convenio, 
-                                      situacao, proximo_num_remessa, id_concedente, session['user_id'], id_banco), fetch=False)
-        
-        if result and result > 0:
-            flash('Remessa criada com sucesso!', 'success')
-            return redirect(url_for('views.remessas'))
-        else:
-            flash('Erro ao criar remessa.', 'error')
-    
-    # Buscar dados para formulário
-    query_concedentes = "SELECT * FROM concedente ORDER BY nome"
-    concedentes = execute_query(query_concedentes)
-    
-    query_bancos = "SELECT * FROM banco ORDER BY nome"
-    bancos = execute_query(query_bancos)
-    
-    return render_template('remessas/create.html', concedentes=concedentes, bancos=bancos)
-
-@views_bp.route('/remessas/editar/<int:id_remessa>', methods=['GET', 'POST'])
-def editar_remessa(id_remessa):
-    if 'user_id' not in session:
-        return redirect(url_for('views.login'))
-    
-    if request.method == 'POST':
-        num_processo = request.form.get('num_processo')
-        nome_proponente = request.form.get('nome_proponente')
-        cpf_cnpj = request.form.get('cpf_cnpj')
-        num_convenio = request.form.get('num_convenio')
-        situacao = request.form.get('situacao')
-        id_concedente = request.form.get('id_concedente')
-        id_banco = request.form.get('id_banco')
-        
-        # num_remessa NÃO é alterado na edição - mantém o valor original
-        query = """
-            UPDATE remessa 
-            SET num_processo = %s, nome_proponente = %s, cpf_cnpj = %s, num_convenio = %s,
-                situacao = %s::situacao_enum, id_concedente = %s, id_banco = %s
-            WHERE id_remessa = %s
-        """
-        result = execute_query(query, (num_processo, nome_proponente, cpf_cnpj, num_convenio,
-                                      situacao, id_concedente, id_banco, id_remessa), fetch=False)
-        
-        if result:
-            flash('Remessa atualizada com sucesso!', 'success')
-            return redirect(url_for('views.remessas'))
-        else:
-            flash('Erro ao atualizar remessa.', 'error')
-    
-    # GET - Buscar dados da remessa para edição
-    query = """
-        SELECT *,
-        (SELECT nome FROM concedente WHERE concedente.id_concedente = remessa.id_concedente) AS concedente_nome,
-        (SELECT nome FROM banco WHERE banco.id_banco = remessa.id_banco) AS banco_nome
-        FROM remessa 
-        WHERE id_remessa = %s;
+    base_query = """
+        SELECT
+            r.*,
+            (
+                SELECT ag.nome_agencia
+                FROM agencia ag
+                WHERE ag.id_agencia = (
+                    SELECT MIN(cc.id_agencia)
+                    FROM conta_convenio cc
+                    WHERE cc.id_remessa = r.id_remessa
+                )
+            ) AS nome_agencia,
+            (SELECT c.nome FROM concedente c WHERE c.id_concedente = r.id_concedente) AS concedente_nome,
+            (SELECT u.nome FROM usuario u WHERE u.id_usuario = r.id_usuario) AS usuario_nome,
+            (SELECT b.nome FROM banco b WHERE b.id_banco = r.id_banco) AS banco_nome
+        FROM remessa r
     """
-    remessa = execute_query(query, (id_remessa,))
+    # Construir cláusula WHERE 
+    filters = []
+    params = []
+    # Filtro de busca geral
+    if search_term:
+        filters.append(
+            """
+            (
+                r.nome_proponente ILIKE %s OR
+                r.cpf_cnpj ILIKE %s OR
+                r.num_convenio ILIKE %s OR
+                CAST(r.num_remessa AS TEXT) ILIKE %s
+            )
+            """
+        # Adiciona parâmetros para o ILIKE
+        )
+        like = f"%{search_term}%"
+        params.extend([like, like, like, like])
+        # Filtro de data
+    if date_from:
+        filters.append("DATE(r.dt_remessa) = %s")
+        params.append(date_from)
+    # Adiciona filtros à query principal
+    if filters:
+        base_query += " WHERE " + " AND ".join(filters)
+    # Ordenação DESC por data de remessa, depois ASC por nome do proponente
+    base_query += " ORDER BY r.dt_remessa DESC NULLS LAST, r.nome_proponente ASC"
     
-    # Buscar dados para formulário
-    query_concedentes = "SELECT * FROM concedente ORDER BY nome"
-    concedentes = execute_query(query_concedentes)
-    
-    query_bancos = "SELECT * FROM banco ORDER BY nome"
-    bancos = execute_query(query_bancos)
-    
+    remessas_list = fetch_all(base_query, params)
+    return render_template(
+        "remessas/list.html",
+        remessas=remessas_list,
+        search_term=search_term,
+        date_from=date_from,
+    )
+
+
+@views_bp.route("/remessas/criar", methods=["GET", "POST"])
+@login_required
+def criar_remessa():
+    form_data = {}
+
+    # Buscar dados para formulário (sempre vamos precisar)
+    concedentes = fetch_all("SELECT * FROM concedente ORDER BY nome")
+    bancos = fetch_all("SELECT * FROM banco ORDER BY nome")
+
+    if request.method == "POST":
+        form_data = request.form.to_dict()
+
+        num_processo = form_data.get("num_processo")
+        nome_proponente = form_data.get("nome_proponente")
+        cpf_cnpj = form_data.get("cpf_cnpj")
+        num_convenio = form_data.get("num_convenio")
+        situacao = form_data.get("situacao", "Em Preparação")
+        id_concedente = form_data.get("id_concedente")
+        id_banco = form_data.get("id_banco")
+
+        if not all([num_processo, nome_proponente, cpf_cnpj, num_convenio, id_concedente]):
+            flash("Todos os campos obrigatórios devem ser preenchidos!", "error")
+            return render_template(
+                "remessas/create.html",
+                concedentes=concedentes,
+                bancos=bancos,
+                form_data=form_data,
+            )
+
+        # Próximo número de remessa
+        resultado_max = fetch_one(
+            "SELECT COALESCE(MAX(num_remessa), 0) + 1 AS proximo_num FROM remessa"
+        )
+        proximo_num_remessa = resultado_max["proximo_num"] if resultado_max else 1
+
+        query_insert = """
+            INSERT INTO remessa (
+                num_processo, nome_proponente, cpf_cnpj, num_convenio,
+                situacao, num_remessa, id_concedente, id_usuario, id_banco
+            ) VALUES (
+                %s, %s, %s, %s, %s::situacao_enum, %s, %s, %s, %s
+            )
+        """
+    #inserir remessa
+        try:
+            result = execute(
+                query_insert,
+                (
+                    num_processo,
+                    nome_proponente,
+                    cpf_cnpj,
+                    num_convenio,
+                    situacao,
+                    proximo_num_remessa,
+                    id_concedente,
+                    session["user_id"],
+                    id_banco,
+                ),
+            )
+        except Exception:
+            flash("Erro ao criar remessa (erro no banco de dados).", "error")
+            return render_template(
+                "remessas/create.html",
+                concedentes=concedentes,
+                bancos=bancos,
+                form_data=form_data,
+            )
+
+        if result and result > 0:
+            flash("Remessa criada com sucesso!", "success")
+            return redirect(url_for("views.remessas"))
+
+        flash("Erro ao criar remessa.", "error")
+        return render_template(
+            "remessas/create.html",
+            concedentes=concedentes,
+            bancos=bancos,
+            form_data=form_data,
+        )
+
+    # GET
+    return render_template(
+        "remessas/create.html",
+        concedentes=concedentes,
+        bancos=bancos,
+        form_data=form_data,
+    )
+
+
+@views_bp.route("/remessas/editar/<int:id_remessa>", methods=["GET", "POST"])
+@login_required
+def editar_remessa(id_remessa):
+    # Buscar dados para carregar a edição
+    remessa = fetch_one(
+        """
+        SELECT r.*,
+               (SELECT nome FROM concedente c WHERE c.id_concedente = r.id_concedente) AS concedente_nome,
+               (SELECT nome FROM banco b       WHERE b.id_banco      = r.id_banco)      AS banco_nome
+          FROM remessa r
+         WHERE r.id_remessa = %s
+        """,
+        (id_remessa,),
+    )
     if not remessa:
-        flash('Remessa não encontrada.', 'error')
-        return redirect(url_for('views.remessas'))
-    
-    return render_template('remessas/edit.html', remessa=remessa[0], concedentes=concedentes, bancos=bancos)
+        flash("Remessa não encontrada.", "error")
+        return redirect(url_for("views.remessas"))
 
-@views_bp.route('/remessas/excluir/<int:id_remessa>', methods=['POST'])
+    concedentes = fetch_all("SELECT * FROM concedente ORDER BY nome")
+    bancos = fetch_all("SELECT * FROM banco ORDER BY nome")
+
+    if request.method == "POST":
+        num_processo = request.form.get("num_processo")
+        nome_proponente = request.form.get("nome_proponente")
+        cpf_cnpj = request.form.get("cpf_cnpj")
+        num_convenio = request.form.get("num_convenio")
+        situacao = request.form.get("situacao")
+        id_concedente = request.form.get("id_concedente")
+        id_banco = request.form.get("id_banco")
+
+        result = execute(
+            """
+            UPDATE remessa
+               SET num_processo    = %s,
+                   nome_proponente = %s,
+                   cpf_cnpj        = %s,
+                   num_convenio    = %s,
+                   situacao        = %s::situacao_enum,
+                   id_concedente   = %s,
+                   id_banco        = %s
+             WHERE id_remessa      = %s
+            """,
+            (
+                num_processo,
+                nome_proponente,
+                cpf_cnpj,
+                num_convenio,
+                situacao,
+                id_concedente,
+                id_banco,
+                id_remessa,
+            ),
+        )
+
+        if result and result > 0:
+            flash("Remessa atualizada com sucesso!", "success")
+            return redirect(url_for("views.remessas"))
+
+        flash("Erro ao atualizar remessa.", "error")
+
+    return render_template(
+        "remessas/edit.html",
+        remessa=remessa,
+        concedentes=concedentes,
+        bancos=bancos,
+    )
+
+
+@views_bp.route("/remessas/excluir/<int:id_remessa>", methods=["POST"])
+@login_required
 def excluir_remessa(id_remessa):
-    if 'user_id' not in session:
-        return redirect(url_for('views.login'))
-    
-    query = "DELETE FROM remessa WHERE id_remessa = %s"
-    result = execute_query(query, (id_remessa,), fetch=False)
-    
-    if result:
-        flash('Remessa excluída com sucesso!', 'success')
-    else:
-        flash('Erro ao excluir remessa.', 'error')
-    
-    return redirect(url_for('views.remessas'))
-#Gerar PDF da remessa
-@views_bp.route('/remessas/editar/<int:id_remessa>/gerar-pdf')
-def gerar_pdf(id_remessa):
-    if 'user_id' not in session:
-        return redirect(url_for('views.login'))
+    print(f"[DEBUG] Tentando excluir remessa id_remessa={id_remessa}")
 
+    remessa = fetch_one("SELECT * FROM remessa WHERE id_remessa = %s", (id_remessa,))
+    print(f"[DEBUG] Remessa encontrada: {remessa}")
+
+    if not remessa:
+        flash("Remessa não encontrada.", "error")
+        return redirect(url_for("views.remessas"))
+
+    # Verifica se há conta_convenio vinculada
+    conta_vinculada = fetch_one(
+        "SELECT 1 FROM conta_convenio WHERE id_remessa = %s LIMIT 1",
+        (id_remessa,),
+    )
+    if conta_vinculada:
+        flash(
+            "Não é possível excluir a remessa: existem contas de convênio vinculadas.",
+            "error",
+        )
+        return redirect(url_for("views.remessas"))
+
+    try:
+        result = execute("DELETE FROM remessa WHERE id_remessa = %s", (id_remessa,))
+        print(f"[DEBUG] Resultado do DELETE remessa: {result}")
+    except Exception as e:
+        print(f"[ERRO EXCLUIR REMESSA] {e}")
+        flash("Erro ao excluir remessa (restrição no banco de dados).", "error")
+        return redirect(url_for("views.remessas"))
+
+    if result and result > 0:
+        flash("Excluído com sucesso!", "success")
+    else:
+        flash("Erro ao excluir remessa.", "error")
+
+    return redirect(url_for("views.remessas"))
+
+
+
+@views_bp.route("/remessas/visualizar/<int:id_remessa>")
+@login_required
+def visualizar_remessa(id_remessa):
     # Buscar dados completos da remessa
     query = """
-        SELECT 
-    *,
-
-    -- Nome do concedente via subconsulta
-    (SELECT c.nome 
-     FROM concedente c 
-     WHERE c.id_concedente = r.id_concedente) AS concedente_nome,
-
-    -- Nome do usuário via subconsulta
-    (SELECT u.nome 
-     FROM usuario u 
-     WHERE u.id_usuario = r.id_usuario) AS usuario_nome,
-
-    -- Nome do banco via subconsulta
-    (SELECT b.nome 
-     FROM banco b 
-     WHERE b.id_banco = r.id_banco) AS banco_nome
-
-FROM remessa r
-WHERE r.id_remessa = %s;
-
+        SELECT
+            r.*,
+            (SELECT c.nome FROM concedente c WHERE c.id_concedente = r.id_concedente) AS concedente_nome,
+            (SELECT u.nome FROM usuario   u WHERE u.id_usuario    = r.id_usuario)    AS usuario_nome,
+            (SELECT b.nome FROM banco     b WHERE b.id_banco      = r.id_banco)      AS banco_nome
+        FROM remessa r
+        WHERE r.id_remessa = %s
     """
-    remessa_data = execute_query(query, (id_remessa,))
+    remessa = fetch_one(query, (id_remessa,))
 
-    if not remessa_data:
-        flash('Remessa não encontrada.', 'error')
-        return redirect(url_for('views.remessas'))
+    if not remessa:
+        flash("Remessa não encontrada.", "error")
+        return redirect(url_for("views.remessas"))
 
-    remessa = remessa_data[0]
+    # Apenas renderiza a página de visualização
+    return render_template("remessas/view.html", remessa=remessa)
 
-    # Configuração do PDF
-    buffer = io.BytesIO()
-    p = canvas.Canvas(buffer, pagesize=letter)
-    width, height = letter
 
-    # Desenhar o conteúdo do PDF
-    p.setFont("Helvetica-Bold", 16)
-    p.drawString(inch, height - inch, f"Detalhes da Remessa Nº: {remessa['num_remessa']}")
-
-    p.setFont("Helvetica", 12)
-    y_position = height - 1.5 * inch
-
-    def draw_line(label, value, y):
-        p.setFont("Helvetica-Bold", 12)
-        p.drawString(inch, y, f"{label}:")
-        p.setFont("Helvetica", 12)
-        p.drawString(inch + 2 * inch, y, str(value) if value is not None else "N/A")
-        return y - 0.3 * inch
-
-    y_position = draw_line("Número do Processo", remessa['num_processo'], y_position)
-    y_position = draw_line("Nome do Proponente", remessa['nome_proponente'], y_position)
-    y_position = draw_line("CPF/CNPJ", remessa['cpf_cnpj'], y_position)
-    y_position = draw_line("Número do Convênio", remessa['num_convenio'], y_position)
-    y_position = draw_line("Situação", remessa['situacao'], y_position)
-    y_position = draw_line("Data da Remessa", remessa['dt_remessa'].strftime('%d/%m/%Y') if remessa['dt_remessa'] else "N/A", y_position)
-    y_position = draw_line("Concedente", remessa['concedente_nome'], y_position)
-    y_position = draw_line("Usuário Responsável", remessa['usuario_nome'], y_position)
-    y_position = draw_line("Banco", remessa['banco_nome'], y_position)
-
-    p.showPage()
-    p.save()
-
-    buffer.seek(0)
-    response = make_response(buffer.getvalue())
-    response.headers['Content-Type'] = 'application/pdf'
-    response.headers['Content-Disposition'] = f'inline; filename=remessa_{remessa["num_remessa"]}.pdf'
-    
-    return response
 
 # ===========================
 # CRUD - CONTAS CONVÊNIO
 # ===========================
 
-@views_bp.route('/contas-convenio')
-def contas_convenio():
-    if 'user_id' not in session:
-        return redirect(url_for('views.login'))
-    
-    query = """
-        SELECT *,
-        (SELECT num_processo FROM remessa WHERE remessa.id_remessa = conta_convenio.id_remessa) AS num_processo,
-        (SELECT nome_proponente FROM remessa WHERE remessa.id_remessa = conta_convenio.id_remessa) AS nome_proponente,
-        (SELECT nome_agencia FROM agencia WHERE agencia.id_agencia = conta_convenio.id_agencia) AS nome_agencia,
-        (SELECT nome FROM banco WHERE banco.id_banco = (SELECT id_banco FROM agencia WHERE agencia.id_agencia = conta_convenio.id_agencia)) AS banco_nome 
-        FROM conta_convenio
-        ORDER BY dt_abertura DESC;
-    """
-    contas_list = execute_query(query)
-    
-    return render_template('contas-convenio/list.html', contas=contas_list)
 
-@views_bp.route('/contas-convenio/criar', methods=['GET', 'POST'])
+@views_bp.route("/contas-convenio")
+@login_required
+def contas_convenio():
+    search_term = request.args.get("search", "").strip()
+    base_query = """
+        SELECT
+            cc.*,
+            (SELECT r.num_processo FROM remessa r WHERE r.id_remessa = cc.id_remessa) AS num_processo,
+            (SELECT r.nome_proponente FROM remessa r WHERE r.id_remessa = cc.id_remessa) AS nome_proponente,
+            (SELECT a.nome_agencia FROM agencia a WHERE a.id_agencia = cc.id_agencia) AS nome_agencia,
+            (
+                SELECT b.nome
+                FROM banco b
+                WHERE b.id_banco = (
+                    SELECT ag.id_banco FROM agencia ag WHERE ag.id_agencia = cc.id_agencia
+                )
+            ) AS banco_nome
+        FROM conta_convenio cc
+    """
+    params = []
+
+    if search_term:
+        base_query += """
+ WHERE (
+        (SELECT r.nome_proponente FROM remessa r WHERE r.id_remessa = cc.id_remessa) ILIKE %s OR
+        (SELECT r.num_processo FROM remessa r WHERE r.id_remessa = cc.id_remessa) ILIKE %s OR
+        (SELECT r.num_convenio FROM remessa r WHERE r.id_remessa = cc.id_remessa) ILIKE %s OR
+        (SELECT a.nome_agencia FROM agencia a WHERE a.id_agencia = cc.id_agencia) ILIKE %s OR
+        (
+            SELECT b.nome
+            FROM banco b
+            WHERE b.id_banco = (
+                SELECT ag.id_banco FROM agencia ag WHERE ag.id_agencia = cc.id_agencia
+            )
+        ) ILIKE %s OR
+        CAST(cc.num_conta AS TEXT) ILIKE %s OR
+        CAST(cc.dv_conta AS TEXT) ILIKE %s
+ )
+        """
+        like = f"%{search_term}%"
+        params.extend([like, like, like, like, like, like, like])
+
+    base_query += " ORDER BY cc.dt_abertura DESC"
+
+    contas_list = fetch_all(base_query, params)
+    return render_template(
+        "contas-convenio/list.html",
+        contas=contas_list,
+        search_term=search_term,
+    )
+
+
+@views_bp.route("/contas-convenio/criar", methods=["GET", "POST"])
+@login_required
 def criar_conta_convenio():
-    if 'user_id' not in session:
-        return redirect(url_for('views.login'))
-    
-    if request.method == 'POST':
-        num_conta = request.form.get('num_conta')
-        dv_conta = request.form.get('dv_conta')
-        dt_abertura = request.form.get('dt_abertura')
-        id_remessa = request.form.get('id_remessa')
-        id_agencia = request.form.get('id_agencia')
-        
-        query = """
+    form_data = {}
+
+    remessas = fetch_all("SELECT * FROM remessa ORDER BY nome_proponente, num_processo")
+    agencias = fetch_all(
+        """
+        SELECT a.*,
+               (SELECT nome FROM banco b WHERE b.id_banco = a.id_banco) AS banco_nome
+          FROM agencia a
+         ORDER BY banco_nome, a.nome_agencia;
+        """
+    )
+
+    if request.method == "POST":
+        form_data = request.form.to_dict()
+        num_conta = form_data.get("num_conta")
+        dv_conta = form_data.get("dv_conta")
+        dt_abertura = form_data.get("dt_abertura")
+        id_remessa = form_data.get("id_remessa")
+        id_agencia = form_data.get("id_agencia")
+
+        if not all([num_conta, dv_conta, dt_abertura, id_remessa, id_agencia]):
+            flash("Todos os campos são obrigatórios.", "error")
+            return render_template(
+                "contas-convenio/create.html",
+                remessas=remessas,
+                agencias=agencias,
+                form_data=form_data,
+            )
+
+        result = execute(
+            """
             INSERT INTO conta_convenio (num_conta, dv_conta, dt_abertura, id_remessa, id_agencia)
             VALUES (%s, %s, %s, %s, %s)
-        """
-        result = execute_query(query, (num_conta, dv_conta, dt_abertura, id_remessa, id_agencia), fetch=False)
-        
-        if result:
-            flash('Conta de convênio criada com sucesso!', 'success')
-            return redirect(url_for('views.contas_convenio'))
-        else:
-            flash('Erro ao criar conta de convênio.', 'error')
-    
-    # Buscar dados para formulário
-    query_remessas = "SELECT * FROM remessa ORDER BY num_processo"
-    remessas = execute_query(query_remessas)
-    
-    query_agencias = """
-        SELECT *,
-        (SELECT nome FROM banco WHERE banco.id_banco = agencia.id_banco) AS banco_nome
-        FROM agencia
-        ORDER BY nome_agencia;
-    """
-    agencias = execute_query(query_agencias)
-    
-    return render_template('contas-convenio/create.html', remessas=remessas, agencias=agencias)
+            """,
+            (num_conta, dv_conta, dt_abertura, id_remessa, id_agencia),
+        )
 
-@views_bp.route('/contas-convenio/editar/<int:id_conta_convenio>', methods=['GET', 'POST'])
+        if result and result > 0:
+            flash("Conta de convênio criada com sucesso!", "success")
+            return redirect(url_for("views.contas_convenio"))
+
+        flash("Erro ao criar conta de convênio.", "error")
+
+    return render_template(
+        "contas-convenio/create.html",
+        remessas=remessas,
+        agencias=agencias,
+        form_data=form_data,
+    )
+
+
+@views_bp.route("/contas-convenio/editar/<int:id_conta_convenio>", methods=["GET", "POST"])
+@login_required
 def editar_conta_convenio(id_conta_convenio):
-    if 'user_id' not in session:
-        return redirect(url_for('views.login'))
-    
-    if request.method == 'POST':
-        num_conta = request.form.get('num_conta')
-        dv_conta = request.form.get('dv_conta')
-        dt_abertura = request.form.get('dt_abertura')
-        id_remessa = request.form.get('id_remessa')
-        id_agencia = request.form.get('id_agencia')
-        
-        query = """
-            UPDATE conta_convenio 
-            SET num_conta = %s, dv_conta = %s, dt_abertura = %s, id_remessa = %s, id_agencia = %s
-            WHERE id_conta_convenio = %s
+    conta = fetch_one(
         """
-        result = execute_query(query, (num_conta, dv_conta, dt_abertura, id_remessa, id_agencia, id_conta_convenio), fetch=False)
-        
-        if result:
-            flash('Conta de convênio atualizada com sucesso!', 'success')
-            return redirect(url_for('views.contas_convenio'))
-        else:
-            flash('Erro ao atualizar conta de convênio.', 'error')
-    
-    # GET - Buscar dados da conta para edição
-    query = """
-        SELECT *,
-        (SELECT num_processo FROM remessa WHERE remessa.id_remessa = cc.id_remessa) AS num_processo,
-        (SELECT nome_agencia FROM agencia WHERE agencia.id_agencia = cc.id_agencia) AS nome_agencia,
-        (SELECT nome FROM banco WHERE banco.id_banco = (SELECT id_banco FROM agencia WHERE agencia.id_agencia = cc.id_agencia)) AS banco_nome
-        FROM conta_convenio cc
-        WHERE cc.id_conta_convenio = %s
-    """
-    conta = execute_query(query, (id_conta_convenio,))
-    
-    # Buscar dados para formulário
-    query_remessas = "SELECT * FROM remessa ORDER BY num_processo"
-    remessas = execute_query(query_remessas)
-    
-    query_agencias = """
-        SELECT *,
-        (SELECT nome FROM banco WHERE banco.id_banco = agencia.id_banco) AS banco_nome
-        FROM agencia
-        ORDER by nome_agencia;
-    """
-    agencias = execute_query(query_agencias)
-    
+        SELECT cc.*,
+               (SELECT num_processo FROM remessa r WHERE r.id_remessa = cc.id_remessa) AS num_processo,
+               (SELECT nome_agencia FROM agencia a WHERE a.id_agencia = cc.id_agencia) AS nome_agencia,
+               (SELECT nome FROM banco b WHERE b.id_banco = (
+                    SELECT id_banco FROM agencia a2 WHERE a2.id_agencia = cc.id_agencia
+               )) AS banco_nome
+          FROM conta_convenio cc
+         WHERE cc.id_conta_convenio = %s
+        """,
+        (id_conta_convenio,),
+    )
     if not conta:
-        flash('Conta de convênio não encontrada.', 'error')
-        return redirect(url_for('views.contas_convenio'))
-    
-    return render_template('contas-convenio/edit.html', conta=conta[0], remessas=remessas, agencias=agencias)
+        flash("Conta de convênio não encontrada.", "error")
+        return redirect(url_for("views.contas_convenio"))
 
-@views_bp.route('/contas-convenio/excluir/<int:id_conta_convenio>', methods=['POST'])
+    remessas = fetch_all("SELECT * FROM remessa ORDER BY nome_proponente, num_processo")
+    agencias = fetch_all(
+        """
+        SELECT a.*,
+               (SELECT nome FROM banco b WHERE b.id_banco = a.id_banco) AS banco_nome
+          FROM agencia a
+         ORDER BY banco_nome, a.nome_agencia;
+        """
+    )
+
+    if request.method == "POST":
+        num_conta = request.form.get("num_conta")
+        dv_conta = request.form.get("dv_conta")
+        dt_abertura = request.form.get("dt_abertura")
+        id_remessa = request.form.get("id_remessa")
+        id_agencia = request.form.get("id_agencia")
+
+        result = execute(
+            """
+            UPDATE conta_convenio
+               SET num_conta   = %s,
+                   dv_conta    = %s,
+                   dt_abertura = %s,
+                   id_remessa  = %s,
+                   id_agencia  = %s
+             WHERE id_conta_convenio = %s
+            """,
+            (num_conta, dv_conta, dt_abertura, id_remessa, id_agencia, id_conta_convenio),
+        )
+
+        if result and result > 0:
+            flash("Conta de convênio atualizada com sucesso!", "success")
+            return redirect(url_for("views.contas_convenio"))
+
+        flash("Erro ao atualizar conta de convênio.", "error")
+
+    return render_template(
+        "contas-convenio/edit.html",
+        conta=conta,
+        remessas=remessas,
+        agencias=agencias,
+    )
+
+@views_bp.route("/contas-convenio/excluir/<int:id_conta_convenio>", methods=["POST"])
+@login_required
 def excluir_conta_convenio(id_conta_convenio):
-    if 'user_id' not in session:
-        return redirect(url_for('views.login'))
-    
-    query = "DELETE FROM conta_convenio WHERE id_conta_convenio = %s"
-    result = execute_query(query, (id_conta_convenio,), fetch=False)
-    
-    if result:
-        flash('Conta de convênio excluída com sucesso!', 'success')
+    print(f"[DEBUG] Tentando excluir conta_convenio id_conta_convenio={id_conta_convenio}")
+
+    conta = fetch_one(
+        "SELECT * FROM conta_convenio WHERE id_conta_convenio = %s",
+        (id_conta_convenio,),
+    )
+    print(f"[DEBUG] Conta_convenio encontrada: {conta}")
+
+    if not conta:
+        flash("Conta de convênio não encontrada.", "error")
+        return redirect(url_for("views.contas_convenio"))
+
+    try:
+        result = execute(
+            "DELETE FROM conta_convenio WHERE id_conta_convenio = %s",
+            (id_conta_convenio,),
+        )
+        print(f"[DEBUG] Resultado do DELETE conta_convenio: {result}")
+    except Exception as e:
+        print(f"[ERRO EXCLUIR CONTA_CONVENIO] {e}")
+        flash("Erro ao excluir conta de convênio (restrição no banco de dados).", "error")
+        return redirect(url_for("views.contas_convenio"))
+
+    if result and result > 0:
+        flash("Excluído com sucesso!", "success")
     else:
-        flash('Erro ao excluir conta de convênio.', 'error')
-    
-    return redirect(url_for('views.contas_convenio'))
+        flash("Erro ao excluir conta de convênio.", "error")
+
+    return redirect(url_for("views.contas_convenio"))
+

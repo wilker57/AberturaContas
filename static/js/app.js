@@ -283,7 +283,8 @@ function protectDeleteForms() {
                                 showConfirmButton: false,
                                 didOpen: () => {
                                     Swal.showLoading();
-                                }
+                                },
+                                timer: 6000 // Fecha o dialog após 6 segundos
                             });
                         }
                         
