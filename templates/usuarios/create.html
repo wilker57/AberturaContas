@@ -1,11 +1,11 @@
 {% extends 'base.html' %}
 
-{% block title %}Criar Usuário - Abertura de Contas{% endblock %}
+{% block title %}Criar Usuario - Abertura de Contas{% endblock %}
 
 {% block content %}
 <div class="page-container">
     <div class="page-header">
-        <h1><i class="fas fa-plus"></i> Criar Usuário</h1>
+        <h1><i class="fas fa-plus"></i> Criar Usuario</h1>
         <a href="{{ url_for('views.usuarios') }}" class="btn btn-secondary">
             <i class="fas fa-arrow-left"></i> Voltar
         </a>
@@ -16,54 +16,100 @@
             <div class="form-row">
                 <div class="form-group">
                     <label for="nome">Nome Completo:</label>
-                    <input type="text" id="nome" name="nome" required class="form-control" placeholder="Ex: João Silva Santos">
+                    <input
+                        type="text"
+                        id="nome"
+                        name="nome"
+                        required
+                        class="form-control"
+                        placeholder="Ex: Joao Silva Santos"
+                        value="{{ form_data.get('nome', '') }}"
+                    >
                 </div>
 
                 <div class="form-group">
-                    <label for="matricula">Matrícula:</label>
-                    <input type="text" id="matricula" name="matricula" required class="form-control" placeholder="Ex: 123456">
+                    <label for="matricula">Matricula:</label>
+                    <input
+                        type="text"
+                        id="matricula"
+                        name="matricula"
+                        required
+                        class="form-control"
+                        placeholder="Ex: 123456"
+                        value="{{ form_data.get('matricula', '') }}"
+                    >
                 </div>
             </div>
 
             <div class="form-row">
                 <div class="form-group">
                     <label for="email">Email:</label>
-                    <input type="email" id="email" name="email" required class="form-control" placeholder="Ex: joao@exemplo.com">
+                    <input
+                        type="email"
+                        id="email"
+                        name="email"
+                        required
+                        class="form-control"
+                        placeholder="Ex: joao@exemplo.com"
+                        value="{{ form_data.get('email', '') }}"
+                    >
                 </div>
 
                 <div class="form-group">
-                    <label for="instituicao">Instituição:</label>
-                    <input type="text" id="instituicao" name="instituicao" class="form-control" placeholder="Ex: Secretaria de Educação">
+                    <label for="instituicao">Instituicao:</label>
+                    <input
+                        type="text"
+                        id="instituicao"
+                        name="instituicao"
+                        class="form-control"
+                        placeholder="Ex: Secretaria de Educacao"
+                        value="{{ form_data.get('instituicao', '') }}"
+                    >
                 </div>
             </div>
 
             <div class="form-row">
                 <div class="form-group">
                     <label for="login">Login:</label>
-                    <input type="text" id="login" name="login" required class="form-control" placeholder="Ex: joao.silva">
+                    <input
+                        type="text"
+                        id="login"
+                        name="login"
+                        required
+                        class="form-control"
+                        placeholder="Ex: joao.silva"
+                        value="{{ form_data.get('login', '') }}"
+                    >
                 </div>
 
                 <div class="form-group">
                     <label for="perfil_enum">Perfil:</label>
                     <select id="perfil_enum" name="perfil_enum" required class="form-control">
-                        <option value="MONITOR">Monitor</option>
-                        <option value="OPERADOR">Operador</option>
-                        <option value="ADMINISTRADOR">Administrador</option>
+                        {% set perfil_atual = form_data.get('perfil_enum', 'MONITOR') %}
+                        <option value="MONITOR" {% if perfil_atual == 'MONITOR' %}selected{% endif %}>Monitor</option>
+                        <option value="OPERADOR" {% if perfil_atual == 'OPERADOR' %}selected{% endif %}>Operador</option>
+                        <option value="ADMINISTRADOR" {% if perfil_atual == 'ADMINISTRADOR' %}selected{% endif %}>Administrador</option>
                     </select>
                 </div>
             </div>
 
             <div class="form-group">
                 <label for="senha">Senha:</label>
-                <input type="password" id="senha" name="senha" required class="form-control" placeholder="Digite uma senha segura">
+                <input
+                    type="password"
+                    id="senha"
+                    name="senha"
+                    required
+                    class="form-control"
+                    placeholder="Digite uma senha segura"
+                >
             </div>
 
             <div class="form-actions">
                 <button type="submit" class="btn btn-success">
-                    
                     <i class="fas fa-save"></i> Salvar
                 </button>
-                <a href="{{ url_for('views.usuarios') }}" class="btn btn-secondary">
+                <a href="{{ url_for('views.usuarios') }}" class="btn btn-outline-secondary">
                     <i class="fas fa-times"></i> Cancelar
                 </a>
             </div>

@@ -14,7 +14,7 @@
     <div class="content-card">
         {% if remessas %}
 <!-- Toolbar da tabela -->
-<div class="table-toolbar">
+<form method="GET" action="{{ url_for('views.remessas') }}" class="table-toolbar">
 
   <!-- Busca com ícone -->
   <div class="input-icon">
@@ -22,9 +22,11 @@
     <input
       type="search"
       id="searchText"
+      name="search"
       class="form-control"
-      placeholder="Buscar por remessa ou convênio..."
+      placeholder="Buscar por convênio..."
       aria-label="Buscar por remessa ou convênio"
+      value="{{ search_term }}"
     >
   </div>
 
@@ -34,26 +36,28 @@
     <input
       type="date"
       id="dateFrom"
+      name="date_from"
       class="form-control"
       aria-label="Filtrar a partir de"
+      value="{{ date_from }}"
     >
   </div>
 
   <!-- Ações -->
   <div class="toolbar-actions">
-    <button type="button" id="searchButton" class="btn btn-primary">Buscar</button>
-    <button type="button" id="clearFilters" class="btn btn-outline">Limpar</button>
+    <button type="submit" id="searchButton" class="btn btn-primary">Buscar</button>
+    <a href="{{ url_for('views.remessas') }}" class="btn btn-outline">Limpar</a>
     
     
   </div>
 
-</div>
+</form>
 
         <div class="table-container">
             <table class="data-table">
                 <thead>
                     <tr>
-                        <th>Remessa</th>
+                        
                         <th>Proponente</th>
                         <th>CPF/CNPJ</th>
                         <th>Convênio</th>
@@ -65,7 +69,7 @@
                 <tbody>
                     {% for remessa in remessas %}
                     <tr>
-                        <td><strong>{{ remessa.num_remessa}}</strong></td>
+                        
                         <td>{{ remessa.nome_proponente }}</td>
                         <td>{{ remessa.cpf_cnpj }}</td>
                         <td>{{ remessa.num_convenio }}</td>
@@ -93,7 +97,7 @@
                         <td>
                             <div class="action-buttons">
                                       <!-- Botão PDF -->    
-                        <a href="{{ url_for('views.gerar_pdf', id_remessa=remessa.id_remessa) }}" target="_blank" class="btn btn-pdf">
+                        <a href="{{ url_for('views.visualizar_remessa', id_remessa=remessa.id_remessa) }}" class="btn btn-pdf">
                             <i class="fas fa-eye"></i>
                             </a>
                                 <a href="{{ url_for('views.editar_remessa', id_remessa=remessa.id_remessa) }}" class="btn btn-sm btn-warning">

@@ -13,29 +13,31 @@
     <div class="content-card">
         {% if agencias %}
              <!-- Toolbar da tabela -->
-        <div class="table-toolbar">
+        <form method="GET" class="table-toolbar" role="search">
 
-            <!-- Busca com ícone -->
+            <!-- Busca com icone -->
             <div class="input-icon">
                 <i class="fas fa-search" aria-hidden="true"></i>
                 <input
                   type="search"
-                  id="searchText"
+                  name="search"
                   class="form-control"
-                  placeholder="Buscar por nº ou nome da agência..."
-                  aria-label="Buscar agências"
+                  placeholder="Buscar por numero ou nome da agencia..."
+                  aria-label="Buscar agencias"
+                  value="{{ search_term or '' }}"
                 >
             </div>
 
-            <!-- Ações -->
+            <!-- Acoes -->
             <div class="toolbar-actions">
-                <button type="button" id="searchButton" class="btn btn-primary">Buscar</button>
-                <button type="button" id="clearFilters" class="btn btn-outline">Limpar</button>
+                <button type="submit" class="btn btn-primary">Buscar</button>
+                <a href="{{ url_for('views.agencias') }}" class="btn btn-outline">Limpar</a>
              
             </div>
 
-        </div> 
-        <div class="table-container">
+        </form>
+
+<div class="table-container">
             <table class="data-table">
                 <thead>
                     <tr>

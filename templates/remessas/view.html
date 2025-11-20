@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+{% block title %}Remessa {{ remessa.num_remessa }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Detalhes da Remessa</h1>
+        <p class="text-muted">Visualize os dados completos da remessa selecionada.</p>
+    </div>
+    <div class="page-actions">
+        <a href="{{ url_for('views.remessas') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Voltar
+        </a>
+    </div>
+</div>
+
+{% set situacao_normalizada = (remessa.situacao or '')|lower %}
+{% set badge_class = 'badge-secondary' %}
+{% if 'prepara' in situacao_normalizada %}
+    {% set badge_class = 'badge-warning' %}
+{% elif 'enviado' in situacao_normalizada %}
+    {% set badge_class = 'badge-info' %}
+{% elif 'retorno' in situacao_normalizada %}
+    {% set badge_class = 'badge-primary' %}
+{% elif 'pendente' in situacao_normalizada %}
+    {% set badge_class = 'badge-secondary' %}
+{% elif 'conta aberta' in situacao_normalizada %}
+    {% set badge_class = 'badge-success' %}
+{% elif 'erro' in situacao_normalizada %}
+    {% set badge_class = 'badge-danger' %}
+{% elif 'aprovad' in situacao_normalizada %}
+    {% set badge_class = 'badge-success' %}
+{% endif %}
+
+<div class="card detail-card">
+    <div class="card-body">
+        <div class="detail-header">
+            <div>
+                <h2>Nº Remessa: {{ remessa.num_remessa }}</h2>
+                <p class="text-muted">Visualize e acompanhe todos os dados desta remessa.</p>
+            </div>
+            <span class="badge {{ badge_class }}">{{ remessa.situacao }}</span>
+        </div>
+
+        <div class="detail-cards-grid">
+            <div class="info-card">
+                <h3>Dados da Remessa</h3>
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <span class="detail-label">Nǧmero da Remessa</span>
+                        <strong>{{ remessa.num_remessa }}</strong>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Data da Remessa</span>
+                        <strong>{{ remessa.dt_remessa.strftime('%d/%m/%Y') if remessa.dt_remessa else 'N/A' }}</strong>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Usuǭrio responsǭvel</span>
+                        <strong>{{ remessa.usuario_nome }}</strong>
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-card">
+                <h3>Proponente</h3>
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <span class="detail-label">Nǧmero do Processo</span>
+                        <strong>{{ remessa.num_processo }}</strong>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Nome do Proponente</span>
+                        <strong>{{ remessa.nome_proponente }}</strong>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">CPF/CNPJ</span>
+                        <strong>{{ remessa.cpf_cnpj }}</strong>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Nǧmero do ConvǦnio</span>
+                        <strong>{{ remessa.num_convenio }}</strong>
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-card">
+                <h3>Relacionamentos</h3>
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <span class="detail-label">Concedente</span>
+                        <strong>{{ remessa.concedente_nome }}</strong>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Banco</span>
+                        <strong>{{ remessa.banco_nome }}</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

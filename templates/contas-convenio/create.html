@@ -1,11 +1,11 @@
 {% extends 'base.html' %}
 
-{% block title %}Criar Conta Convênio - Abertura de Contas{% endblock %}
+{% block title %}Criar Conta Convenio - Abertura de Contas{% endblock %}
 
 {% block content %}
 <div class="page-container">
     <div class="page-header">
-        <h1><i class="fas fa-plus"></i> Criar Conta Convênio</h1>
+        <h1><i class="fas fa-plus"></i> Criar Conta Convenio</h1>
         <button type="button" class="btn btn-secondary" onclick="window.location.href='{{ url_for('views.contas_convenio') }}'">
             <i class="fas fa-arrow-left"></i> Voltar
         </button>
@@ -15,19 +15,41 @@
         <form method="POST" class="form-container">
             <div class="form-row">
                 <div class="form-group">
-                    <label for="num_conta">Número da Conta:</label>
-                    <input type="text" id="num_conta" name="num_conta" required class="form-control" placeholder="Ex: 123456">
+                    <label for="num_conta">Numero da Conta:</label>
+                    <input
+                        type="text"
+                        id="num_conta"
+                        name="num_conta"
+                        required
+                        class="form-control"
+                        placeholder="Ex: 123456"
+                        value="{{ form_data.get('num_conta', '') }}"
+                    >
                 </div>
 
                 <div class="form-group">
-                    <label for="dv_conta">Dígito Verificador:</label>
-                    <input type="text" id="dv_conta" name="dv_conta" class="form-control" placeholder="Ex: 7">
+                    <label for="dv_conta">Digito Verificador:</label>
+                    <input
+                        type="text"
+                        id="dv_conta"
+                        name="dv_conta"
+                        class="form-control"
+                        placeholder="Ex: 7"
+                        value="{{ form_data.get('dv_conta', '') }}"
+                    >
                 </div>
             </div>
 
             <div class="form-group">
                 <label for="dt_abertura">Data de Abertura:</label>
-                <input type="date" id="dt_abertura" name="dt_abertura" required class="form-control">
+                <input
+                    type="date"
+                    id="dt_abertura"
+                    name="dt_abertura"
+                    required
+                    class="form-control"
+                    value="{{ form_data.get('dt_abertura', '') }}"
+                >
             </div>
 
             <div class="form-group">
@@ -35,7 +57,10 @@
                 <select id="id_remessa" name="id_remessa" required class="form-control">
                     <option value="">Selecione uma remessa</option>
                     {% for remessa in remessas %}
-                    <option value="{{ remessa.id_remessa }}">
+                    <option
+                        value="{{ remessa.id_remessa }}"
+                        {% if form_data.get('id_remessa') == remessa.id_remessa|string %}selected{% endif %}
+                    >
                         {{ remessa.num_processo }} - {{ remessa.nome_proponente }}
                     </option>
                     {% endfor %}
@@ -43,11 +68,14 @@
             </div>
 
             <div class="form-group">
-                <label for="id_agencia">Agência:</label>
+                <label for="id_agencia">Agencia:</label>
                 <select id="id_agencia" name="id_agencia" required class="form-control">
-                    <option value="">Selecione uma agência</option>
+                    <option value="">Selecione uma agencia</option>
                     {% for agencia in agencias %}
-                    <option value="{{ agencia.id_agencia }}">
+                    <option
+                        value="{{ agencia.id_agencia }}"
+                        {% if form_data.get('id_agencia') == agencia.id_agencia|string %}selected{% endif %}
+                    >
                         {{ agencia.banco_nome }} - {{ agencia.nome_agencia }} ({{ agencia.num_agencia }})
                     </option>
                     {% endfor %}
@@ -58,7 +86,7 @@
                 <button type="submit" class="btn btn-success">
                     <i class="fas fa-save"></i> Salvar
                 </button>
-                <button type="button" class="btn btn-secondary" onclick="window.location.href='{{ url_for('views.contas_convenio') }}'">
+                <button type="button" class="btn btn-outline-secondary" onclick="window.location.href='{{ url_for('views.contas_convenio') }}'">
                     <i class="fas fa-times"></i> Cancelar
                 </button>
             </div>

@@ -14,51 +14,41 @@
     <div class="content-card">
         {% if contas %}
       <!-- Toolbar da tabela -->
-<div class="table-toolbar">
+        <form method="GET" class="table-toolbar" role="search">
 
-  <!-- Busca com ícone -->
-  <div class="input-icon">
-    <i class="fas fa-search" aria-hidden="true"></i>
-    <input
-      type="search"
-      id="searchText"
-      class="form-control"
-      placeholder="Buscar por agencia, proponente..."
-      aria-label="Buscar por conta convênio, proponente ou agência"
-    >
-  </div>
+            <!-- Busca com icone -->
+            <div class="input-icon">
+                <i class="fas fa-search" aria-hidden="true"></i>
+                <input
+                  type="search"
+                  name="search"
+                  class="form-control"
+                  placeholder="Buscar por Proponente..."
+                  aria-label="Buscar contas de convenio"
+                  value="{{ search_term or '' }}"
+                >
+            </div>
 
-  <!-- Intervalo de datas -->
-  <div class="date-range">
-    <label for="dateFrom"></label>
-    <input
-      type="date"
-      id="dateFrom"
-      class="form-control"
-      aria-label="Filtrar a partir de"
-    >
-  </div>
+            <!-- Acoes -->
+            <div class="toolbar-actions">
+                <button type="submit" class="btn btn-primary">Buscar</button>
+                <a href="{{ url_for('views.contas_convenio') }}" class="btn btn-outline">Limpar</a>
+             
+            </div>
 
-  <!-- Ações -->
-  <div class="toolbar-actions">
-    <button type="button" id="searchButton" class="btn btn-primary">Buscar</button>
-    <button type="button" id="clearFilters" class="btn btn-outline">Limpar</button>
-    
-  </div>
+        </form>
 
-</div>
-
-
-        <div class="table-container">
+<div class="table-container">
             <table class="data-table">
                 <thead>
                     <tr>
                         <th>Data Abertura</th>
+                        <th>Proponente</th>
                          <th>Banco</th>
                          <th>Agência</th>
                         <th>Nº da Conta</th>
                         <th>DV</th>
-                        <th>Proponente</th>
+
                         <th>Ações</th>
                     </tr>
                 </thead>
@@ -67,11 +57,12 @@
                     <tr>
                         
                         <td>{{ conta.dt_abertura.strftime('%d/%m/%Y') if conta.dt_abertura else '-' }}</td>
+                        <td>{{ conta.nome_proponente }}</td>
                         <td>{{ conta.banco_nome }}</td>
                         <td>{{ conta.nome_agencia }}</td>
                         <td><strong>{{ conta.num_conta }}</strong></td>
                         <td>{{ conta.dv_conta }}</td>
-                        <td>{{ conta.nome_proponente }}</td>
+                        
                         
                         
                         <td>

@@ -15,26 +15,51 @@
         <form method="POST" class="form-container">
             <div class="form-row">
                 <div class="form-group">
-                    <label for="codigo_secretaria">Código da Secretaria:</label>
-                    <input type="text" id="codigo_secretaria" name="codigo_secretaria" required class="form-control" placeholder="Ex: 001">
+                    <label for="codigo_secretaria">Codigo da Secretaria:</label>
+                    <input
+                        type="text"
+                        id="codigo_secretaria"
+                        name="codigo_secretaria"
+                        required
+                        class="form-control"
+                        placeholder="Ex: 001"
+                        value="{{ form_data.get('codigo_secretaria', '') }}"
+                    >
                 </div>
 
                 <div class="form-group">
                     <label for="sigla">Sigla:</label>
-                    <input type="text" id="sigla" name="sigla" required class="form-control" placeholder="Ex: SEDF" maxlength="10">
+                    <input
+                        type="text"
+                        id="sigla"
+                        name="sigla"
+                        required
+                        class="form-control"
+                        placeholder="Ex: SEDF"
+                        maxlength="10"
+                        value="{{ form_data.get('sigla', '') }}"
+                    >
                 </div>
             </div>
 
             <div class="form-group">
                 <label for="nome">Nome do Concedente:</label>
-                <input type="text" id="nome" name="nome" required class="form-control" placeholder="Ex: Secretaria de Estado de Educação do Distrito Federal">
+                <input
+                    type="text"
+                    id="nome"
+                    name="nome"
+                    required
+                    class="form-control"
+                    placeholder="Ex: Secretaria de Estado de Educacao"
+                    value="{{ form_data.get('nome', '') }}"
+                >
             </div>
 
             <div class="form-actions">
                 <button type="submit" class="btn btn-success">
                     <i class="fas fa-save"></i> Salvar
                 </button>
-                <button type="button" class="btn btn-secondary" onclick="window.location.href='{{ url_for('views.concedentes') }}'">
+                <button type="button" class="btn btn-outline-secondary" onclick="window.location.href='{{ url_for('views.concedentes') }}'">
                     <i class="fas fa-times"></i> Cancelar
                 </button>
             </div>

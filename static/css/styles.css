@@ -458,12 +458,12 @@ a.login-link:hover {
 }
 
 .btn-pdf {
-    background-color: #c0392b; /* Cor vermelha para PDF */
+    background-color: #c0392b;
     color: white;
 }
 
 .btn-pdf:hover {
-    background-color: #a93226; /* Tom mais escuro de vermelho */
+    background-color: #198754;
     transform: translateY(-1px);
 }
 
@@ -964,6 +964,70 @@ a.login-link:hover {
     border-bottom: 1px solid var(--border-color);
 }
 
+/* Detail view cards */
+.detail-card {
+    border: none;
+    border-radius: 16px;
+    box-shadow: var(--shadow);
+}
+
+.detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 24px;
+    margin-bottom: 24px;
+}
+
+.detail-header h2 {
+    margin: 0;
+}
+
+.detail-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 20px;
+}
+
+.info-card {
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    padding: 20px;
+    background: #fff;
+    box-shadow: 0 15px 30px rgba(22, 46, 112, 0.06);
+}
+
+.info-card h3 {
+    margin: 0 0 16px 0;
+    color: var(--primary-color);
+    font-size: 1.1rem;
+}
+
+.detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 14px;
+}
+
+.detail-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.detail-item:last-child {
+    border-bottom: none;
+}
+
+.detail-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+}
+
 .header-content h2 {
     margin: 0;
     color: var(--primary-color);
@@ -1143,9 +1207,9 @@ a.login-link:hover {
 }
 
 .btn-pdf:hover {
-    background: #b71c1c;
+    background: #198754;
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(211, 47, 47, 0.3);
+    box-shadow: 0 4px 12px rgba(25, 135, 84, 0.35);
 }
 
 .btn-pdf:active {

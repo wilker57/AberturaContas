@@ -1001,8 +1001,8 @@ def remessas():
     # Adiciona filtros à query principal
     if filters:
         base_query += " WHERE " + " AND ".join(filters)
-    # Ordenação DESC por data de remessa, depois ASC por nome do proponente
-    base_query += " ORDER BY r.dt_remessa DESC NULLS LAST, r.nome_proponente ASC"
+    # Ordenação por nome do proponente em ordem decrescente
+    base_query += " ORDER BY r.nome_proponente DESC"
     
     remessas_list = fetch_all(base_query, params)
     return render_template(
@@ -1436,7 +1436,7 @@ def excluir_conta_convenio(id_conta_convenio):
         return redirect(url_for("views.contas_convenio"))
 
     if result and result > 0:
-        flash("Excluído com sucesso!", "success")
+        flash("Conta de convênio excluída com sucesso!", "success")
     else:
         flash("Erro ao excluir conta de convênio.", "error")
 
