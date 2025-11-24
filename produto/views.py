@@ -295,7 +295,7 @@ def dashboard():
 @views_bp.route("/bancos")
 @login_required
 def bancos():
-    search_term = request.args.get("search", "").strip()
+    search_term = request.args.get("search", "").strip() #strip retira espaços em branco
     query = "SELECT * FROM banco"
     params = []
 #CAST converte id_banco para texto para permitir busca parcial
