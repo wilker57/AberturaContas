@@ -15,47 +15,63 @@
         {% if usuarios %}
 
         <!-- Toolbar da tabela -->
-        <form method="GET" class="table-toolbar" role="search">
-
+        <form method="GET" class="table-toolbar" role="search" style="display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap;">
             <!-- Busca com icone -->
-            <div class="input-icon">
+            <div class="input-icon filter-field" style="flex:1 1 320px; min-width:260px;">
                 <i class="fas fa-search" aria-hidden="true"></i>
                 <input
                   type="search"
                   name="search"
                   class="form-control"
-                  placeholder="Buscar por nome ou login..."
+                  placeholder="Buscar por nome..."
                   aria-label="Buscar usuarios"
                   value="{{ search_term or '' }}"
                 >
             </div>
 
-            <!-- Acoes -->
-            <div class="toolbar-actions">
-                <button type="submit" class="btn btn-primary">Buscar</button>
-                <a href="{{ url_for('views.usuarios') }}" class="btn btn-outline">Limpar</a>
-             
+            <div class="filter-field" style="flex:0 0 160px; min-width:140px;">
+                <label for="perfil">Perfil</label>
+                {% set perfil_atual = perfil_filter or '' %}
+                <select id="perfil" name="perfil" class="form-control">
+                    <option value="">Todos</option>
+                    <option value="ADMINISTRADOR" {% if perfil_atual == 'ADMINISTRADOR' %}selected{% endif %}>Administrador</option>
+                    <option value="MONITOR" {% if perfil_atual == 'MONITOR' %}selected{% endif %}>Monitor</option>
+                    <option value="OPERADOR" {% if perfil_atual == 'OPERADOR' %}selected{% endif %}>Operador</option>
+                </select>
             </div>
 
+            <div class="filter-field" style="flex:0 0 150px; min-width:130px;">
+                <label for="status">Status</label>
+                {% set status_atual = status_filter or '' %}
+                <select id="status" name="status" class="form-control">
+                    <option value="">Todos</option>
+                    <option value="ATIVO" {% if status_atual == 'ATIVO' %}selected{% endif %}>Ativo</option>
+                    <option value="INATIVO" {% if status_atual == 'INATIVO' %}selected{% endif %}>Inativo</option>
+                </select>
+            </div>
+
+            <div class="filter-actions" style="display:flex; gap:8px; flex:0 0 auto; align-items:center;">
+                <button type="submit" class="btn btn-primary">Buscar</button>
+                <a href="{{ url_for('views.usuarios') }}" class="btn btn-outline">Limpar</a>
+            </div>
         </form>
 
-<div class="table-container">
+        <div class="table-container">
             <table class="data-table">
                 <thead>
                     <tr>
-                        
                         <th>Nome</th>
                         <th>Login</th>
                         <th>Email</th>
                         <th>Perfil</th>
                         <th>Instituição</th>
+                        <th>Status</th>
                         <th>Ações</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for usuario in usuarios %}
                     <tr>
-                        
                         <td>{{ usuario.nome }}</td>
                         <td><strong>{{ usuario.login }}</strong></td>
                         <td>{{ usuario.email }}</td>
@@ -69,6 +85,14 @@
                             {% endif %}
                         </td>
                         <td>{{ usuario.instituicao }}</td>
+                        <td>
+                            {% set status_atual = usuario.status_enum|upper %}
+                            {% if status_atual == 'ATIVO' %}
+                                <span class="badge badge-success">Ativo</span>
+                            {% else %}
+                                <span class="badge badge-danger">Inativo</span>
+                            {% endif %}
+                        </td>
                         <td>
                             <div class="action-buttons">
                                 <a href="{{ url_for('views.editar_usuario', id_usuario=usuario.id_usuario) }}" class="btn btn-sm btn-warning">

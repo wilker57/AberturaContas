@@ -18,14 +18,14 @@
 
   <!-- Busca com ícone -->
   <div class="input-icon">
-    <i class="fas fa-search" aria-hidden="true"></i>
+    <i class="" aria-hidden="true"></i>
     <input
       type="search"
       id="searchText"
       name="search"
       class="form-control"
-      placeholder="Buscar por convênio..."
-      aria-label="Buscar por remessa ou convênio"
+      placeholder="Buscar por proponente..."
+      aria-label="Buscar por nome do proponente"
       value="{{ search_term }}"
     >
   </div>
@@ -41,6 +41,21 @@
       aria-label="Filtrar a partir de"
       value="{{ date_from }}"
     >
+  </div>
+
+  <div class="form-group">
+    <label for="situacao">Situação</label>
+    <select id="situacao" name="situacao" class="form-control">
+      <option value="">Todas</option>
+      {% set situacao_atual = situacao_filter or '' %}
+      <option value="Aguardando retorno" {% if situacao_atual == 'Aguardando retorno' %}selected{% endif %}>Aguardando retorno</option>
+      <option value="Aprovado" {% if situacao_atual == 'Aprovado' %}selected{% endif %}>Aprovado</option>
+      <option value="Conta Aberta" {% if situacao_atual == 'Conta Aberta' %}selected{% endif %}>Conta Aberta</option>
+      <option value="Em Preparação" {% if situacao_atual == 'Em Preparação' %}selected{% endif %}>Em Preparação</option>
+      <option value="Enviado" {% if situacao_atual == 'Enviado' %}selected{% endif %}>Enviado</option>
+      <option value="Erro" {% if situacao_atual == 'Erro' %}selected{% endif %}>Erro</option>
+      <option value="Pendente de envio" {% if situacao_atual == 'Pendente de envio' %}selected{% endif %}>Pendente de envio</option>
+    </select>
   </div>
 
   <!-- Ações -->

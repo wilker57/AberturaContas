@@ -205,6 +205,8 @@ def registrar():
         login_input = form_data.get("login")
         senha = form_data.get("senha")
         perfil_enum = form_data.get("perfil_enum", "MONITOR")
+        status_enum = form_data.get("status_enum", "ATIVO").upper()
+        status_enum = form_data.get("status_enum", "ATIVO").upper()
     # Validação básica
         if not all([nome, matricula, email, instituicao, login_input, senha]):
             flash("Todos os campos são obrigatórios!", "error")
@@ -227,10 +229,10 @@ def registrar():
     # insere novo usuário
         result = execute(
             """
-            INSERT INTO usuario (nome, matricula, email, instituicao, login, senha, perfil_enum)
-            VALUES (%s, %s, %s, %s, %s, %s, %s::perfilenum)
+            INSERT INTO usuario (nome, matricula, email, instituicao, login, senha, perfil_enum, status_enum)
+            VALUES (%s, %s, %s, %s, %s, %s, %s::perfilenum, %s::statusenum)
             """,
-            (nome, matricula, email, instituicao, login_input, senha_hash, perfil_enum),
+            (nome, matricula, email, instituicao, login_input, senha_hash, perfil_enum, status_enum),
         )
     # se o resultado for positivo, redireciona para login
         if result and result > 0:
@@ -243,9 +245,61 @@ def registrar():
     return render_template("auth/register.html", form_data=form_data)
 
 # ESQUECI MINHA SENHA
-@views_bp.route("/esqueci-senha")
+@views_bp.route("/esqueci-senha", methods=["GET", "POST"])
 def forgot_password():
-    return render_template("auth/forgot-password.html")
+    form_data = {}
+    show_new_password = False
+
+    if request.method == "POST":
+        form_data = request.form.to_dict()
+        email = form_data.get("email", "").strip()
+        stage = form_data.get("stage", "verify")
+
+        if not email:
+            flash("Informe o e-mail cadastrado.", "error")
+            return render_template("auth/forgot-password.html", form_data=form_data, show_new_password=False)
+
+        usuario = fetch_one(
+            "SELECT id_usuario FROM usuario WHERE email = %s",
+            (email,),
+        )
+
+        if not usuario:
+            flash("E-mail não encontrado.", "error")
+            return render_template("auth/forgot-password.html", form_data=form_data, show_new_password=False)
+
+        if stage == "reset":
+            nova_senha = form_data.get("nova_senha", "").strip()
+            confirmar_senha = form_data.get("confirmar_senha", "").strip()
+
+            if not all([nova_senha, confirmar_senha]):
+                flash("Informe a nova senha e a confirmação.", "error")
+                show_new_password = True
+                return render_template("auth/forgot-password.html", form_data=form_data, show_new_password=show_new_password)
+
+            if nova_senha != confirmar_senha:
+                flash("As senhas digitadas não conferem.", "error")
+                show_new_password = True
+                return render_template("auth/forgot-password.html", form_data=form_data, show_new_password=show_new_password)
+
+            senha_hash = generate_password_hash(nova_senha)
+            result = execute(
+                "UPDATE usuario SET senha = %s WHERE email = %s",
+                (senha_hash, email),
+            )
+
+            if result and result > 0:
+                flash("Senha redefinida com sucesso. Faça login com a nova senha.", "success")
+                return redirect(url_for("views.login"))
+
+            flash("Não foi possível redefinir a senha. Tente novamente.", "error")
+            show_new_password = True
+        else:
+            # E-mail válido encontrado, exibe campos de nova senha
+            flash("E-mail encontrado. Informe a nova senha.", "info")
+            show_new_password = True
+
+    return render_template("auth/forgot-password.html", form_data=form_data, show_new_password=show_new_password)
 
 # LOGOUT
 @views_bp.route("/logout")
@@ -310,7 +364,7 @@ def bancos():
         like = f"%{search_term}%"
         params.extend([like, like])
 
-    query += " ORDER BY nome"
+    query += " ORDER BY id_banco, nome"
 
     bancos_list = fetch_all(query, params)
     return render_template(
@@ -439,21 +493,17 @@ def agencias():
             """
             (
                 a.nome_agencia ILIKE %s OR
-                CAST(a.num_agencia AS TEXT) ILIKE %s OR
-                CAST(a.dv_agencia AS TEXT) ILIKE %s OR
-                a.cidade ILIKE %s OR
-                a.uf ILIKE %s OR
-                (SELECT nome FROM banco WHERE banco.id_banco = a.id_banco) ILIKE %s
+                CAST(a.num_agencia AS TEXT) ILIKE %s
             )
             """
         )
         like = f"%{search_term}%"
-        params.extend([like, like, like, like, like, like])
+        params.extend([like, like])
 
     if filters:
         base_query += " WHERE " + " AND ".join(filters)
 
-    base_query += " ORDER BY a.nome_agencia"
+    base_query += " ORDER BY a.nome_agencia, a.num_agencia"
 
     agencias_list = fetch_all(base_query, params)
     return render_template(
@@ -618,15 +668,14 @@ def concedentes():
     if search_term:
         query += """
  WHERE (
-        CAST(codigo_secretaria AS TEXT) ILIKE %s OR
         sigla ILIKE %s OR
         nome ILIKE %s
  )
         """
         like = f"%{search_term}%"
-        params.extend([like, like, like])
+        params.extend([like, like])
 
-    query += " ORDER BY nome"
+    query += " ORDER BY codigo_secretaria, sigla"
 
     concedentes_list = fetch_all(query, params)
     return render_template(
@@ -766,22 +815,26 @@ def excluir_concedente(id_concedente):
 @login_required
 def usuarios():
     search_term = request.args.get("search", "").strip()
+    perfil_filter = request.args.get("perfil", "").strip().upper()
+    status_filter = request.args.get("status", "").strip().upper()
     query = "SELECT * FROM usuario"
     params = []
+    filters = []
 
     if search_term:
-        query += """
- WHERE (
-        nome ILIKE %s OR
-        login ILIKE %s OR
-        email ILIKE %s OR
-        instituicao ILIKE %s OR
-        CAST(matricula AS TEXT) ILIKE %s OR
-        perfil_enum::TEXT ILIKE %s
- )
-        """
-        like = f"%{search_term}%"
-        params.extend([like, like, like, like, like, like])
+        filters.append("nome ILIKE %s")
+        params.append(f"%{search_term}%")
+
+    if perfil_filter:
+        filters.append("perfil_enum = %s::perfilenum")
+        params.append(perfil_filter)
+
+    if status_filter:
+        filters.append("status_enum = %s::statusenum")
+        params.append(status_filter)
+
+    if filters:
+        query += " WHERE " + " AND ".join(filters)
 
     query += " ORDER BY nome"
 
@@ -790,6 +843,8 @@ def usuarios():
         "usuarios/list.html",
         usuarios=usuarios_list,
         search_term=search_term,
+        perfil_filter=perfil_filter,
+        status_filter=status_filter,
     )
 
 
@@ -807,6 +862,7 @@ def criar_usuario():
         login_input = form_data.get("login")
         senha = form_data.get("senha")
         perfil_enum = form_data.get("perfil_enum", "MONITOR")
+        status_enum = form_data.get("status_enum", "ATIVO").upper()
 
         if not all([nome, matricula, email, instituicao, login_input, senha]):
             flash("Todos os campos são obrigatórios.", "error")
@@ -816,10 +872,10 @@ def criar_usuario():
 
         result = execute(
             """
-            INSERT INTO usuario (nome, matricula, email, instituicao, login, senha, perfil_enum)
-            VALUES (%s, %s, %s, %s, %s, %s, %s::perfilenum)
+            INSERT INTO usuario (nome, matricula, email, instituicao, login, senha, perfil_enum, status_enum)
+            VALUES (%s, %s, %s, %s, %s, %s, %s::perfilenum, %s::statusenum)
             """,
-            (nome, matricula, email, instituicao, login_input, senha_hash, perfil_enum),
+            (nome, matricula, email, instituicao, login_input, senha_hash, perfil_enum, status_enum),
         )
 
         if result and result > 0:
@@ -850,6 +906,7 @@ def editar_usuario(id_usuario):
         instituicao = form_data.get("instituicao")
         login_input = form_data.get("login")
         perfil_enum = form_data.get("perfil_enum", usuario.get("perfil_enum"))
+        status_enum = form_data.get("status_enum", usuario.get("status_enum", "ATIVO")).upper()
         nova_senha = form_data.get("nova_senha")
 
         if not all([nome, matricula, email, instituicao, login_input]):
@@ -872,10 +929,11 @@ def editar_usuario(id_usuario):
                        instituicao = %s,
                        login       = %s,
                        perfil_enum = %s::perfilenum,
+                       status_enum = %s::statusenum,
                        senha       = %s
                  WHERE id_usuario  = %s
                 """,
-                (nome, matricula, email, instituicao, login_input, perfil_enum, senha_hash, id_usuario),
+                (nome, matricula, email, instituicao, login_input, perfil_enum, status_enum, senha_hash, id_usuario),
             )
         else:
             result = execute(
@@ -886,10 +944,11 @@ def editar_usuario(id_usuario):
                        email       = %s,
                        instituicao = %s,
                        login       = %s,
-                       perfil_enum = %s::perfilenum
+                       perfil_enum = %s::perfilenum,
+                       status_enum = %s::statusenum
                  WHERE id_usuario  = %s
                 """,
-                (nome, matricula, email, instituicao, login_input, perfil_enum, id_usuario),
+                (nome, matricula, email, instituicao, login_input, perfil_enum, status_enum, id_usuario),
             )
 
         if result and result > 0:
@@ -958,6 +1017,7 @@ def remessas():
     search_term = request.args.get("search", "").strip()
     # data a partir de
     date_from = request.args.get("date_from", "").strip()
+    situacao_filter = request.args.get("situacao", "").strip()
 
     base_query = """
         SELECT
@@ -979,30 +1039,22 @@ def remessas():
     # Construir cláusula WHERE 
     filters = []
     params = []
-    # Filtro de busca geral
+    # Filtro de busca geral (nome do proponente)
     if search_term:
-        filters.append(
-            """
-            (
-                r.nome_proponente ILIKE %s OR
-                r.cpf_cnpj ILIKE %s OR
-                r.num_convenio ILIKE %s OR
-                CAST(r.num_remessa AS TEXT) ILIKE %s
-            )
-            """
-        # Adiciona parâmetros para o ILIKE
-        )
-        like = f"%{search_term}%"
-        params.extend([like, like, like, like])
-        # Filtro de data
+        filters.append("r.nome_proponente ILIKE %s")
+        params.append(f"%{search_term}%")
+    if situacao_filter:
+        filters.append("r.situacao = %s")
+        params.append(situacao_filter)
+    # Filtro de data
     if date_from:
         filters.append("DATE(r.dt_remessa) = %s")
         params.append(date_from)
     # Adiciona filtros à query principal
     if filters:
         base_query += " WHERE " + " AND ".join(filters)
-    # Ordenação por nome do proponente em ordem decrescente
-    base_query += " ORDER BY r.nome_proponente DESC"
+    # Ordenação por nome do proponente
+    base_query += " ORDER BY r.nome_proponente"
     
     remessas_list = fetch_all(base_query, params)
     return render_template(
@@ -1010,6 +1062,7 @@ def remessas():
         remessas=remessas_list,
         search_term=search_term,
         date_from=date_from,
+        situacao_filter=situacao_filter,
     )
 
 
@@ -1018,7 +1071,7 @@ def remessas():
 def criar_remessa():
     form_data = {}
 
-    # Buscar dados para formulário (sempre vamos precisar)
+    # Buscar dados para formulário 
     concedentes = fetch_all("SELECT * FROM concedente ORDER BY nome")
     bancos = fetch_all("SELECT * FROM banco ORDER BY nome")
 
@@ -1264,23 +1317,11 @@ def contas_convenio():
     if search_term:
         base_query += """
  WHERE (
-        (SELECT r.nome_proponente FROM remessa r WHERE r.id_remessa = cc.id_remessa) ILIKE %s OR
-        (SELECT r.num_processo FROM remessa r WHERE r.id_remessa = cc.id_remessa) ILIKE %s OR
-        (SELECT r.num_convenio FROM remessa r WHERE r.id_remessa = cc.id_remessa) ILIKE %s OR
-        (SELECT a.nome_agencia FROM agencia a WHERE a.id_agencia = cc.id_agencia) ILIKE %s OR
-        (
-            SELECT b.nome
-            FROM banco b
-            WHERE b.id_banco = (
-                SELECT ag.id_banco FROM agencia ag WHERE ag.id_agencia = cc.id_agencia
-            )
-        ) ILIKE %s OR
-        CAST(cc.num_conta AS TEXT) ILIKE %s OR
-        CAST(cc.dv_conta AS TEXT) ILIKE %s
+        (SELECT r.nome_proponente FROM remessa r WHERE r.id_remessa = cc.id_remessa) ILIKE %s
  )
         """
         like = f"%{search_term}%"
-        params.extend([like, like, like, like, like, like, like])
+        params.extend([like])
 
     base_query += " ORDER BY cc.dt_abertura DESC"
 

@@ -53,6 +53,17 @@
                 </div>
             </div>
 
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="status_enum">Status:</label>
+                    {% set status_atual = usuario.status_enum|upper %}
+                    <select id="status_enum" name="status_enum" required class="form-control">
+                        <option value="ATIVO" {% if status_atual == 'ATIVO' %}selected{% endif %}>Ativo</option>
+                        <option value="INATIVO" {% if status_atual == 'INATIVO' %}selected{% endif %}>Inativo</option>
+                    </select>
+                </div>
+            </div>
+
             <div class="form-group">
                 <label for="nova_senha">Nova Senha (opcional):</label>
                 <input type="password" id="nova_senha" name="nova_senha" class="form-control" placeholder="Digite apenas se quiser alterar a senha">
