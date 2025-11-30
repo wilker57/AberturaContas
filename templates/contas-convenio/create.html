@@ -11,6 +11,38 @@
         </button>
     </div>
 
+     <div class="form-group">
+                <label for="id_remessa">Remessa:</label>
+                <select id="id_remessa" name="id_remessa" required class="form-control">
+                    <option value="">Selecione uma remessa</option>
+                    {% for remessa in remessas %}
+                    <option
+                        value="{{ remessa.id_remessa }}"
+                        {% if form_data.get('id_remessa') == remessa.id_remessa|string %}selected{% endif %}
+                    >
+                        {{ remessa.num_remessa }} / {{ remessa.nome_proponente }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+             <div class="form-group">
+                <label for="id_agencia">Agencia:</label>
+                <select id="id_agencia" name="id_agencia" required class="form-control">
+                    <option value="">Selecione uma agencia</option>
+                    {% for agencia in agencias %}
+                    <option
+                        value="{{ agencia.id_agencia }}"
+                        {% if form_data.get('id_agencia') == agencia.id_agencia|string %}selected{% endif %}
+                    >
+                        {{ agencia.banco_nome }} - {{ agencia.nome_agencia }} ({{ agencia.num_agencia }})
+                    </option>
+                    {% endfor %}
+                </select>
+            
+
+    </div>
+
     <div class="content-card">
         <form method="POST" class="form-container">
             <div class="form-row">
@@ -50,36 +82,6 @@
                     class="form-control"
                     value="{{ form_data.get('dt_abertura', '') }}"
                 >
-            </div>
-
-            <div class="form-group">
-                <label for="id_remessa">Remessa:</label>
-                <select id="id_remessa" name="id_remessa" required class="form-control">
-                    <option value="">Selecione uma remessa</option>
-                    {% for remessa in remessas %}
-                    <option
-                        value="{{ remessa.id_remessa }}"
-                        {% if form_data.get('id_remessa') == remessa.id_remessa|string %}selected{% endif %}
-                    >
-                        {{ remessa.num_processo }} - {{ remessa.nome_proponente }}
-                    </option>
-                    {% endfor %}
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label for="id_agencia">Agencia:</label>
-                <select id="id_agencia" name="id_agencia" required class="form-control">
-                    <option value="">Selecione uma agencia</option>
-                    {% for agencia in agencias %}
-                    <option
-                        value="{{ agencia.id_agencia }}"
-                        {% if form_data.get('id_agencia') == agencia.id_agencia|string %}selected{% endif %}
-                    >
-                        {{ agencia.banco_nome }} - {{ agencia.nome_agencia }} ({{ agencia.num_agencia }})
-                    </option>
-                    {% endfor %}
-                </select>
             </div>
 
             <div class="form-actions">

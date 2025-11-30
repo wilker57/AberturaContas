@@ -128,6 +128,36 @@ def check_password_hash(hashed_password, password):
         print(f"[AUTH] Erro na verificação de senha: {e}")
         return False
 
+# Mapear valores de enum para o formato do banco
+def map_perfil_enum(value):
+    """Mapeia valores de perfil para o formato correto do banco"""
+    if not value:
+        return "MONITOR"
+    
+    mapping = {
+        "ADMINISTRADOR": "ADMIN",
+        "ADMIN": "ADMIN",
+        "Administrador": "ADMIN",
+        "OPERADOR": "OPERADOR", 
+        "Operador": "OPERADOR",
+        "MONITOR": "MONITOR",
+        "Monitor": "MONITOR"
+    }
+    return mapping.get(value, "MONITOR")
+
+def map_status_enum(value):
+    """Mapeia valores de status para o formato correto do banco"""
+    if not value:
+        return "ATIVO"
+    
+    mapping = {
+        "ATIVO": "ATIVO",
+        "Ativo": "ATIVO",
+        "INATIVO": "INATIVO",
+        "Inativo": "INATIVO"
+    }
+    return mapping.get(value, "ATIVO")
+
 
 # ===========================
 # DECORATOR DE LOGIN
@@ -205,8 +235,11 @@ def registrar():
         login_input = form_data.get("login")
         senha = form_data.get("senha")
         perfil_enum = form_data.get("perfil_enum", "MONITOR")
-        status_enum = form_data.get("status_enum", "ATIVO").upper()
-        status_enum = form_data.get("status_enum", "ATIVO").upper()
+        status_enum = form_data.get("status_enum", "ATIVO")
+        
+        # Valores já estão no formato correto do banco
+        # perfil_enum = map_perfil_enum(perfil_enum)
+        # status_enum = map_status_enum(status_enum)
     # Validação básica
         if not all([nome, matricula, email, instituicao, login_input, senha]):
             flash("Todos os campos são obrigatórios!", "error")
@@ -230,7 +263,7 @@ def registrar():
         result = execute(
             """
             INSERT INTO usuario (nome, matricula, email, instituicao, login, senha, perfil_enum, status_enum)
-            VALUES (%s, %s, %s, %s, %s, %s, %s::perfilenum, %s::statusenum)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             """,
             (nome, matricula, email, instituicao, login_input, senha_hash, perfil_enum, status_enum),
         )
@@ -826,11 +859,13 @@ def usuarios():
         params.append(f"%{search_term}%")
 
     if perfil_filter:
-        filters.append("perfil_enum = %s::perfilenum")
+        # filtro 
+        filters.append("perfil_enum = %s")
         params.append(perfil_filter)
 
     if status_filter:
-        filters.append("status_enum = %s::statusenum")
+        # status
+        filters.append("status_enum = %s")
         params.append(status_filter)
 
     if filters:
@@ -851,6 +886,12 @@ def usuarios():
 @views_bp.route("/usuarios/criar", methods=["GET", "POST"])
 @login_required
 def criar_usuario():
+    # Verificar se o usuário logado é administrador
+    user_profile = session.get("user_profile", "MONITOR")
+    if user_profile != "ADMIN":
+        flash("Acesso negado. Somente administradores podem criar usuários.", "error")
+        return redirect(url_for("views.usuarios"))
+    
     form_data = {}
 
     if request.method == "POST":
@@ -862,7 +903,11 @@ def criar_usuario():
         login_input = form_data.get("login")
         senha = form_data.get("senha")
         perfil_enum = form_data.get("perfil_enum", "MONITOR")
-        status_enum = form_data.get("status_enum", "ATIVO").upper()
+        status_enum = form_data.get("status_enum", "ATIVO")
+        
+        # Valores já estão no formato correto do banco
+        # perfil_enum = map_perfil_enum(perfil_enum)
+        # status_enum = map_status_enum(status_enum)
 
         if not all([nome, matricula, email, instituicao, login_input, senha]):
             flash("Todos os campos são obrigatórios.", "error")
@@ -873,7 +918,7 @@ def criar_usuario():
         result = execute(
             """
             INSERT INTO usuario (nome, matricula, email, instituicao, login, senha, perfil_enum, status_enum)
-            VALUES (%s, %s, %s, %s, %s, %s, %s::perfilenum, %s::statusenum)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             """,
             (nome, matricula, email, instituicao, login_input, senha_hash, perfil_enum, status_enum),
         )
@@ -896,6 +941,14 @@ def editar_usuario(id_usuario):
         flash("Usuário não encontrado.", "error")
         return redirect(url_for("views.usuarios"))
 
+    # Verificar se o usuário pode editar: admin pode editar qualquer um, outros só podem editar a si mesmos
+    user_profile = session.get("user_profile", "MONITOR")
+    current_user_id = session.get("user_id")
+    
+    if user_profile != "ADMIN" and current_user_id != id_usuario:
+        flash("Acesso negado. Você só pode editar seus próprios dados.", "error")
+        return redirect(url_for("views.usuarios"))
+
     form_data = usuario.copy()
 
     if request.method == "POST":
@@ -906,8 +959,20 @@ def editar_usuario(id_usuario):
         instituicao = form_data.get("instituicao")
         login_input = form_data.get("login")
         perfil_enum = form_data.get("perfil_enum", usuario.get("perfil_enum"))
-        status_enum = form_data.get("status_enum", usuario.get("status_enum", "ATIVO")).upper()
+        status_enum = form_data.get("status_enum", usuario.get("status_enum", "ATIVO"))
         nova_senha = form_data.get("nova_senha")
+        
+        # Validação de permissão: Apenas administradores podem alterar perfil, senha e status
+        user_profile = session.get("user_profile", "MONITOR")
+        if user_profile != "ADMIN":
+            # Se não é admin, manter valores originais do usuário
+            perfil_enum = usuario.get("perfil_enum")
+            status_enum = usuario.get("status_enum")
+            nova_senha = None  # Não permitir alteração de senha
+        
+        # Valores já estão no formato correto do banco
+        # perfil_enum = map_perfil_enum(perfil_enum)
+        # status_enum = map_status_enum(status_enum)
 
         if not all([nome, matricula, email, instituicao, login_input]):
             flash("Todos os campos obrigatórios devem ser preenchidos.", "error")
@@ -928,8 +993,8 @@ def editar_usuario(id_usuario):
                        email       = %s,
                        instituicao = %s,
                        login       = %s,
-                       perfil_enum = %s::perfilenum,
-                       status_enum = %s::statusenum,
+                       perfil_enum = %s,
+                       status_enum = %s,
                        senha       = %s
                  WHERE id_usuario  = %s
                 """,
@@ -944,8 +1009,8 @@ def editar_usuario(id_usuario):
                        email       = %s,
                        instituicao = %s,
                        login       = %s,
-                       perfil_enum = %s::perfilenum,
-                       status_enum = %s::statusenum
+                       perfil_enum = %s,
+                       status_enum = %s
                  WHERE id_usuario  = %s
                 """,
                 (nome, matricula, email, instituicao, login_input, perfil_enum, status_enum, id_usuario),
@@ -965,6 +1030,12 @@ def editar_usuario(id_usuario):
 @views_bp.route("/usuarios/excluir/<int:id_usuario>", methods=["POST"])
 @login_required
 def excluir_usuario(id_usuario):
+    # Verificar se o usuário logado é administrador
+    user_profile = session.get("user_profile", "MONITOR")
+    if user_profile != "ADMIN":
+        flash("Acesso negado. Somente administradores podem excluir usuários.", "error")
+        return redirect(url_for("views.usuarios"))
+        
     print(f"[DEBUG] Tentando excluir usuário id_usuario={id_usuario}")
 
     # 1) SELECT na própria tabela

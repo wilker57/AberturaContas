@@ -70,12 +70,12 @@
             <div class="form-group">
                 <label for="situacao">Situação:</label>
                 <select id="situacao" name="situacao" required class="form-control">
+                    <option value="Aguardando retorno" {% if remessa.situacao == 'Aguardando retorno' %}selected{% endif %}>Aguardando retorno</option>
+                    <option value="Conta Aberta" {% if remessa.situacao == 'Conta Aberta' %}selected{% endif %}>Conta Aberta</option>
                     <option value="Em Preparação" {% if remessa.situacao == 'Em Preparação' %}selected{% endif %}>Em Preparação</option>
                     <option value="Enviado" {% if remessa.situacao == 'Enviado' %}selected{% endif %}>Enviado</option>
-                    <option value="Aguardando retorno" {% if remessa.situacao == 'Aguardando retorno' %}selected{% endif %}>Aguardando retorno</option>
-                    <option value="Pendente de envio" {% if remessa.situacao == 'Pendente de envio' %}selected{% endif %}>Pendente de envio</option>
-                    <option value="Conta Aberta" {% if remessa.situacao == 'Conta Aberta' %}selected{% endif %}>Conta Aberta</option>
                     <option value="Erro" {% if remessa.situacao == 'Erro' %}selected{% endif %}>Erro</option>
+                    <option value="Pendente de envio" {% if remessa.situacao == 'Pendente de envio' %}selected{% endif %}>Pendente de envio</option>
                 </select>
             </div>
 

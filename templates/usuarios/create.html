@@ -86,9 +86,9 @@
                     <label for="perfil_enum">Perfil:</label>
                     <select id="perfil_enum" name="perfil_enum" required class="form-control">
                         {% set perfil_atual = form_data.get('perfil_enum', 'MONITOR') %}
+                        <option value="ADMIN" {% if perfil_atual == 'ADMIN' %}selected{% endif %}>Administrador</option>
                         <option value="MONITOR" {% if perfil_atual == 'MONITOR' %}selected{% endif %}>Monitor</option>
                         <option value="OPERADOR" {% if perfil_atual == 'OPERADOR' %}selected{% endif %}>Operador</option>
-                        <option value="ADMINISTRADOR" {% if perfil_atual == 'ADMINISTRADOR' %}selected{% endif %}>Administrador</option>
                     </select>
                 </div>
             </div>

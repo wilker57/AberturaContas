@@ -45,11 +45,19 @@
 
                 <div class="form-group">
                     <label for="perfil_enum">Perfil:</label>
-                    <select id="perfil_enum" name="perfil_enum" required class="form-control">
-                        <option value="MONITOR" {% if usuario.perfil_enum == 'MONITOR' %}selected{% endif %}>Monitor</option>
-                        <option value="OPERADOR" {% if usuario.perfil_enum == 'OPERADOR' %}selected{% endif %}>Operador</option>
-                        <option value="ADMINISTRADOR" {% if usuario.perfil_enum == 'ADMINISTRADOR' %}selected{% endif %}>Administrador</option>
-                    </select>
+                    {% if session.user_profile == 'ADMIN' %}
+                        <select id="perfil_enum" name="perfil_enum" required class="form-control">
+                            <option value="ADMIN" {% if usuario.perfil_enum == 'ADMIN' %}selected{% endif %}>Administrador</option>
+                            <option value="MONITOR" {% if usuario.perfil_enum == 'MONITOR' %}selected{% endif %}>Monitor</option>
+                            <option value="OPERADOR" {% if usuario.perfil_enum == 'OPERADOR' %}selected{% endif %}>Operador</option>
+                        </select>
+                    {% else %}
+                        <input type="text" class="form-control" value="{% if usuario.perfil_enum == 'ADMIN' %}Administrador{% elif usuario.perfil_enum == 'OPERADOR' %}Operador{% else %}Monitor{% endif %}" readonly style="background-color: #f8f9fa;">
+                        <input type="hidden" name="perfil_enum" value="{{ usuario.perfil_enum }}">
+                        <small class="form-text text-muted">
+                            <i class="fas fa-lock"></i> Somente administradores podem alterar o perfil de usuários.
+                        </small>
+                    {% endif %}
                 </div>
             </div>
 
@@ -57,19 +65,34 @@
                 <div class="form-group">
                     <label for="status_enum">Status:</label>
                     {% set status_atual = usuario.status_enum|upper %}
-                    <select id="status_enum" name="status_enum" required class="form-control">
-                        <option value="ATIVO" {% if status_atual == 'ATIVO' %}selected{% endif %}>Ativo</option>
-                        <option value="INATIVO" {% if status_atual == 'INATIVO' %}selected{% endif %}>Inativo</option>
-                    </select>
+                    {% if session.user_profile == 'ADMIN' %}
+                        <select id="status_enum" name="status_enum" required class="form-control">
+                            <option value="ATIVO" {% if status_atual == 'ATIVO' %}selected{% endif %}>Ativo</option>
+                            <option value="INATIVO" {% if status_atual == 'INATIVO' %}selected{% endif %}>Inativo</option>
+                        </select>
+                    {% else %}
+                        <input type="text" class="form-control" value="{% if status_atual == 'ATIVO' %}Ativo{% else %}Inativo{% endif %}" readonly style="background-color: #f8f9fa;">
+                        <input type="hidden" name="status_enum" value="{{ usuario.status_enum }}">
+                        <small class="form-text text-muted">
+                            <i class="fas fa-lock"></i> Somente administradores podem alterar o status de usuários.
+                        </small>
+                    {% endif %}
                 </div>
             </div>
 
             <div class="form-group">
                 <label for="nova_senha">Nova Senha (opcional):</label>
-                <input type="password" id="nova_senha" name="nova_senha" class="form-control" placeholder="Digite apenas se quiser alterar a senha">
-                <small class="form-text text-muted">
-                    <i class="fas fa-info-circle"></i> Para alterar a senha, digite a nova senha. Deixe em branco para manter a senha atual.
-                </small>
+                {% if session.user_profile == 'ADMIN' %}
+                    <input type="password" id="nova_senha" name="nova_senha" class="form-control" placeholder="Digite apenas se quiser alterar a senha">
+                    <small class="form-text text-muted">
+                        <i class="fas fa-info-circle"></i> Para alterar a senha, digite a nova senha. Deixe em branco para manter a senha atual.
+                    </small>
+                {% else %}
+                    <input type="password" class="form-control" placeholder="******* (Protegida)" readonly style="background-color: #f8f9fa;">
+                    <small class="form-text text-muted">
+                        <i class="fas fa-lock"></i> Somente administradores podem alterar senhas de usuários.
+                    </small>
+                {% endif %}
             </div>
 
             <div class="form-actions">

@@ -6,9 +6,11 @@
 <div class="page-container">
     <div class="page-header">
         <h1>Usuários</h1>
-        <a href="{{ url_for('views.criar_usuario') }}" class="btn btn-success">
-            <i class="fas fa-plus"></i> Novo
-        </a>
+        {% if session.user_profile == 'ADMIN' %}
+            <a href="{{ url_for('views.criar_usuario') }}" class="btn btn-success">
+                <i class="fas fa-plus"></i> Novo
+            </a>
+        {% endif %}
     </div>
 
     <div class="content-card">
@@ -34,7 +36,7 @@
                 {% set perfil_atual = perfil_filter or '' %}
                 <select id="perfil" name="perfil" class="form-control">
                     <option value="">Todos</option>
-                    <option value="ADMINISTRADOR" {% if perfil_atual == 'ADMINISTRADOR' %}selected{% endif %}>Administrador</option>
+                    <option value="ADMIN" {% if perfil_atual == 'ADMIN' %}selected{% endif %}>Administrador</option>
                     <option value="MONITOR" {% if perfil_atual == 'MONITOR' %}selected{% endif %}>Monitor</option>
                     <option value="OPERADOR" {% if perfil_atual == 'OPERADOR' %}selected{% endif %}>Operador</option>
                 </select>
@@ -76,12 +78,14 @@
                         <td><strong>{{ usuario.login }}</strong></td>
                         <td>{{ usuario.email }}</td>
                         <td>
-                            {% if usuario.perfil_enum == 'ADMINISTRADOR' %}
-                                <span class="badge badge-danger">{{ usuario.perfil_enum }}</span>
+                            {% if usuario.perfil_enum == 'ADMIN' %}
+                                <span class="badge badge-danger">Administrador</span>
                             {% elif usuario.perfil_enum == 'OPERADOR' %}
-                                <span class="badge badge-warning">{{ usuario.perfil_enum }}</span>
+                                <span class="badge badge-warning">Operador</span>
+                            {% elif usuario.perfil_enum == 'MONITOR' %}
+                                <span class="badge badge-info">Monitor</span>
                             {% else %}
-                                <span class="badge badge-info">{{ usuario.perfil_enum }}</span>
+                                <span class="badge badge-secondary">{{ usuario.perfil_enum }}</span>
                             {% endif %}
                         </td>
                         <td>{{ usuario.instituicao }}</td>
@@ -98,7 +102,7 @@
                                 <a href="{{ url_for('views.editar_usuario', id_usuario=usuario.id_usuario) }}" class="btn btn-sm btn-warning">
                                     <i class="fas fa-edit"></i> 
                                 </a>
-                                {% if usuario.id_usuario != session.user_id %}
+                                {% if session.user_profile == 'ADMIN' and usuario.id_usuario != session.user_id %}
                                 <form method="POST" action="{{ url_for('views.excluir_usuario', id_usuario=usuario.id_usuario) }}" style="display: inline;" class="delete-form" data-message="Tem certeza que deseja excluir este usuário?">
                                     <button type="submit" class="btn btn-sm btn-danger">
                                         <i class="fas fa-trash"></i> 

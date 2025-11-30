@@ -104,7 +104,7 @@
                 <label for="situacao">Situacao:</label>
                 {% set situacao_atual = form_data.get('situacao', 'Em Preparação') %}
                 <select id="situacao" name="situacao" required class="form-control">
-                    {% for status in ['Em Preparação','Enviado','Aguardando retorno','Pendente de envio','Conta Aberta','Erro'] %}
+                    {% for status in ['Aguardando retorno','Conta Aberta','Em Preparação','Enviado','Erro','Pendente de envio'] %}
                     <option value="{{ status }}" {% if situacao_atual == status %}selected{% endif %}>
                         {{ status }}
                     </option>
