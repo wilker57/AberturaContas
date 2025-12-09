@@ -25,7 +25,7 @@
 {% elif 'pendente' in situacao_normalizada %}
     {% set badge_class = 'badge-secondary' %}
 {% elif 'conta aberta' in situacao_normalizada %}
-    {% set badge_class = 'badge-success' %}
+    {% set badge_class = 'badge-success' %} 
 {% elif 'erro' in situacao_normalizada %}
     {% set badge_class = 'badge-danger' %}
 {% elif 'aprovad' in situacao_normalizada %}
@@ -37,7 +37,7 @@
         <div class="detail-header">
             <div>
                 <h2>Nº Remessa: {{ remessa.num_remessa }}</h2>
-                <p class="text-muted">Visualize e acompanhe todos os dados desta remessa.</p>
+                <p class="text-muted">Acompanhe todos os dados desta remessa.</p>
             </div>
             <span class="badge {{ badge_class }}">{{ remessa.situacao }}</span>
         </div>
@@ -47,7 +47,7 @@
                 <h3>Dados da Remessa</h3>
                 <div class="detail-grid">
                     <div class="detail-item">
-                        <span class="detail-label">Nǧmero da Remessa</span>
+                        <span class="detail-label">Número da Remessa</span>
                         <strong>{{ remessa.num_remessa }}</strong>
                     </div>
                     <div class="detail-item">
@@ -55,17 +55,16 @@
                         <strong>{{ remessa.dt_remessa.strftime('%d/%m/%Y') if remessa.dt_remessa else 'N/A' }}</strong>
                     </div>
                     <div class="detail-item">
-                        <span class="detail-label">Usuǭrio responsǭvel</span>
+                        <span class="detail-label">Usuário responsável</span>
                         <strong>{{ remessa.usuario_nome }}</strong>
                     </div>
                 </div>
             </div>
-
             <div class="info-card">
                 <h3>Proponente</h3>
                 <div class="detail-grid">
                     <div class="detail-item">
-                        <span class="detail-label">Nǧmero do Processo</span>
+                        <span class="detail-label">Número do Processo</span>
                         <strong>{{ remessa.num_processo }}</strong>
                     </div>
                     <div class="detail-item">
@@ -77,7 +76,7 @@
                         <strong>{{ remessa.cpf_cnpj }}</strong>
                     </div>
                     <div class="detail-item">
-                        <span class="detail-label">Nǧmero do ConvǦnio</span>
+                        <span class="detail-label">Número do Convênio</span>
                         <strong>{{ remessa.num_convenio }}</strong>
                     </div>
                 </div>
@@ -94,6 +93,12 @@
                         <span class="detail-label">Banco</span>
                         <strong>{{ remessa.banco_nome }}</strong>
                     </div>
+                    {% if remessa.situacao == 'Conta Aberta' and remessa.dt_abertura_conta %}
+                    <div class="detail-item">
+                        <span class="detail-label">Data de Abertura da Conta</span>
+                        <strong>{{ remessa.dt_abertura_conta.strftime('%d/%m/%Y') }}</strong>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>

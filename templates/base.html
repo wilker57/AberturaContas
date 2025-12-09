@@ -32,30 +32,50 @@
         </div>
         
         {% if session.user_id %}
-        <div class="nav-menu">
-            <a href="{{ url_for('views.dashboard') }}" class="nav-link">
-                <i class="fas fa-home"></i> Dashboard
+        <div class="menu-section">
+            <div class="menu-title">Menu</div>
+            <a href="{{ url_for('views.dashboard') }}" class="menu-item">
+                <i class="fas fa-home"></i>
+                <span>Dashboard</span>
             </a>
-            <a href="{{ url_for('views.bancos') }}" class="nav-link">
-                <i class="fas fa-university"></i> Bancos
+            <a href="{{ url_for('views.bancos') }}" class="menu-item">
+                <i class="fas fa-university"></i>
+                <span>Bancos</span>
             </a>
-            <a href="{{ url_for('views.agencias') }}" class="nav-link">
-                <i class="fas fa-building"></i> Agências
+            <a href="{{ url_for('views.agencias') }}" class="menu-item">
+                <i class="fas fa-building"></i>
+                <span>Agências</span>
             </a>
-            <a href="{{ url_for('views.concedentes') }}" class="nav-link">
-                <i class="fas fa-handshake"></i> Concedentes
+            <a href="{{ url_for('views.concedentes') }}" class="menu-item">
+                <i class="fas fa-handshake"></i>
+                <span>Concedentes</span>
             </a>
-            <a href="{{ url_for('views.remessas') }}" class="nav-link">
-                <i class="fas fa-file-invoice"></i> Remessas
+
+            <div class="menu-item-container">
+                <a href="#" class="menu-item menu-toggle" onclick="toggleSubmenu(event, 'remessas-submenu')">
+                    <i class="fas fa-file-invoice"></i>
+                    <span>Remessas</span>
+                    <i class="fas fa-chevron-down submenu-arrow"></i>
+                </a>
+                <div class="submenu" id="remessas-submenu">
+                    <a href="{{ url_for('views.remessas') }}" class="submenu-item">
+                        <i class="fas fa-list"></i>
+                        <span>Listar Remessas</span>
+                    </a>
+                    <a href="{{ url_for('views.contas_convenio') }}" class="submenu-item">
+                        <i class="fas fa-wallet"></i>
+                        <span>Gerenciar Contas</span>
+                    </a>
+                </div>
+            </div>
+
+            <a href="{{ url_for('views.usuarios') }}" class="menu-item">
+                <i class="fas fa-users"></i>
+                <span>Usuários</span>
             </a>
-            <a href="{{ url_for('views.contas_convenio') }}" class="nav-link">
-                <i class="fas fa-credit-card"></i> Contas Convênio
-            </a>
-            <a href="{{ url_for('views.usuarios') }}" class="nav-link">
-                <i class="fas fa-users"></i> Usuários
-            </a>
-            <a href="{{ url_for('views.logout') }}" class="nav-link logout">
-                <i class="fas fa-sign-out-alt"></i> Logout
+            <a href="{{ url_for('views.logout') }}" class="menu-item logout">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Logout</span>
             </a>
         </div>
         
@@ -65,6 +85,23 @@
         </div>
         {% endif %}
     </nav>
+
+    <script>
+        function toggleSubmenu(event, submenuId) {
+            event.preventDefault();
+            const submenu = document.getElementById(submenuId);
+            const arrow = event.currentTarget.querySelector('.submenu-arrow');
+            
+            if (!submenu || !arrow) {
+                console.error('Submenu ou seta não encontrado');
+                return;
+            }
+            
+            const isActive = submenu.classList.contains('active');
+            submenu.classList.toggle('active', !isActive);
+            arrow.classList.toggle('rotate', !isActive);
+        }
+    </script>
 
     <!-- Botão de Toggle para Mobile -->
     <button class="mobile-nav-toggle">

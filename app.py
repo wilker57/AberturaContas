@@ -14,7 +14,7 @@ def create_app():
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
     app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:wil874408@localhost:5432/abertura_contas'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    app.config['SQLALCHEMY_ECHO'] = True  # Para debug - remover em produção
+    app.config['SQLALCHEMY_ECHO'] = False  # Desabilitar logs SQL
     
     # Inicializa extensões
     from produto.models import db
@@ -24,17 +24,15 @@ def create_app():
     try:
         from flask_migrate import Migrate
         migrate = Migrate(app, db)
-        print(" Flask-Migrate configurado!")
     except ImportError:
-        print(" Flask-Migrate não disponível - usando db.create_all()")
+        pass
     
     # Registra blueprints/rotas
     try:
         from produto.views import views_bp
         app.register_blueprint(views_bp)
-        print(" Views registradas com sucesso!")
     except ImportError as e:
-        print(f" Erro ao importar views: {e}")
+        print(f"Erro ao importar views: {e}")
         # Fallback: criar rotas básicas se views não funcionar
         @app.route('/')
         def index():
@@ -66,11 +64,9 @@ if __name__ == "__main__":
     # Criar tabelas se não existirem
     with app.app_context():
         from produto.models import db
-        print("🔄 Criando tabelas no banco de dados...")
         try:
             db.create_all()
-            print("✅ Tabelas criadas com sucesso!")
         except Exception as e:
-            print(f"❌ Erro ao criar tabelas: {e}")
+            print(f"Erro ao criar tabelas: {e}")
     
     app.run(debug=True, host='0.0.0.0', port=5000)

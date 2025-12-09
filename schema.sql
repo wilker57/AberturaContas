@@ -1,6 +1,6 @@
 CREATE TYPE perfil_enum AS ENUM ('Administrador', 'Operador', 'Monitor');
 CREATE TYPE status_enum AS ENUM ('Ativo', 'Inativo');
-CREATE TYPE situacao_enum AS ENUM ('Em preparação', 'Enviado', 'Aguardando retorno', 'Aprovado', 'Conta aberta', 'Erro');
+CREATE TYPE situacao_enum AS ENUM ('Em preparação', 'Enviado', 'Aguardando retorno', 'Conta aberta', 'Erro');
 
 CREATE TABLE concedente (
     id_concedente SERIAL PRIMARY KEY,

@@ -1,0 +1,63 @@
+<!-- Componente de Paginação -->
+{% if total_pages > 1 %}
+<div class="pagination-container">
+    <div class="pagination-info">
+        Mostrando {{ start_item }} a {{ end_item }} de {{ total_items }} resultados
+    </div>
+    <nav aria-label="Navegação de páginas">
+        <ul class="pagination">
+            <!-- Botão Anterior -->
+            <li class="page-item {% if current_page == 1 %}disabled{% endif %}">
+                <a class="page-link" href="?page={{ current_page - 1 }}{% if search_term %}&search={{ search_term }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if situacao_filter %}&situacao={{ situacao_filter }}{% endif %}" 
+                   {% if current_page == 1 %}tabindex="-1" aria-disabled="true"{% endif %}>
+                    <i class="fas fa-chevron-left"></i>
+                </a>
+            </li>
+
+            <!-- Primeira página -->
+            
+            {% if current_page > 3 %}
+            <li class="page-item">
+                <a class="page-link" href="?page=1{% if search_term %}&search={{ search_term }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if situacao_filter %}&situacao={{ situacao_filter }}{% endif %}">1</a>
+            </li>
+            {% if current_page > 4 %}
+            <li class="page-item disabled">
+                <span class="page-link">...</span>
+            </li>
+            {% endif %}
+            {% endif %}
+
+            <!-- Páginas próximas -->
+            {% set start_page = [current_page - 2, 1] | max %}
+            {% set end_page = [current_page + 3, total_pages + 1] | min %}
+            {% for page_num in range(start_page, end_page) %}
+            <li class="page-item {% if page_num == current_page %}active{% endif %}">
+                <a class="page-link" href="?page={{ page_num }}{% if search_term %}&search={{ search_term }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if situacao_filter %}&situacao={{ situacao_filter }}{% endif %}">
+                    {{ page_num }}
+                </a>
+            </li>
+            {% endfor %}
+
+            <!-- Última página -->
+            {% if current_page < total_pages - 2 %}
+            {% if current_page < total_pages - 3 %}
+            <li class="page-item disabled">
+                <span class="page-link">...</span>
+            </li>
+            {% endif %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ total_pages }}{% if search_term %}&search={{ search_term }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if situacao_filter %}&situacao={{ situacao_filter }}{% endif %}">{{ total_pages }}</a>
+            </li>
+            {% endif %}
+
+            <!-- Botão Próximo -->
+            <li class="page-item {% if current_page == total_pages %}disabled{% endif %}">
+                <a class="page-link" href="?page={{ current_page + 1 }}{% if search_term %}&search={{ search_term }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if situacao_filter %}&situacao={{ situacao_filter }}{% endif %}"
+                   {% if current_page == total_pages %}tabindex="-1" aria-disabled="true"{% endif %}>
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</div>
+{% endif %}

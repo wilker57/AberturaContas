@@ -90,19 +90,41 @@ document.addEventListener('DOMContentLoaded', function () {
 
 function setActiveMenuItem() {
     const currentPath = window.location.pathname;
-    const navLinks = document.querySelectorAll('.nav-link');
     
-    navLinks.forEach(function(link) {
+    // Procurar por todos os links de menu (menu-item e submenu-item)
+    const menuItems = document.querySelectorAll('.menu-item, .submenu-item');
+    
+    menuItems.forEach(function(link) {
         const href = link.getAttribute('href');
-        if (href === currentPath || 
+        
+        // Verifica se o link corresponde à página atual
+        if (href && (
+            href === currentPath || 
             (currentPath.startsWith('/bancos') && href.includes('/bancos')) ||
             (currentPath.startsWith('/agencias') && href.includes('/agencias')) ||
             (currentPath.startsWith('/concedentes') && href.includes('/concedentes')) ||
             (currentPath.startsWith('/usuarios') && href.includes('/usuarios')) ||
             (currentPath.startsWith('/remessas') && href.includes('/remessas')) ||
-            (currentPath.startsWith('/contas-convenio') && href.includes('/contas_convenio'))
-        ) {
+            (currentPath.startsWith('/contas-convenio') && href.includes('/contas'))
+        )) {
             link.classList.add('active');
+            
+            // Se for um submenu-item, também ativar o submenu pai
+            if (link.classList.contains('submenu-item')) {
+                const submenu = link.closest('.submenu');
+                if (submenu) {
+                    submenu.classList.add('active');
+                    
+                    // Ativar a seta do menu-toggle
+                    const container = submenu.closest('.menu-item-container');
+                    if (container) {
+                        const arrow = container.querySelector('.submenu-arrow');
+                        if (arrow) {
+                            arrow.classList.add('rotate');
+                        }
+                    }
+                }
+            }
         }
     });
 }
@@ -333,3 +355,61 @@ function confirmDelete(url) {
     });
 }
 
+// ===========================
+// AUTO-FECHAR FLASH MESSAGES
+// ===========================
+document.addEventListener('DOMContentLoaded', function() {
+    const flashMessages = document.querySelectorAll('.flash-message');
+    
+    flashMessages.forEach(function(message) {
+        // Auto-fechar após 5 segundos (exceto mensagens de erro que ficam por 7 segundos)
+        const isError = message.classList.contains('flash-error');
+        const timeout = isError ? 7000 : 5000;
+        
+        setTimeout(function() {
+            message.style.animation = 'slideOutRight 0.4s ease-out';
+            setTimeout(function() {
+                message.remove();
+            }, 400);
+        }, timeout);
+    });
+});
+
+// Animação de saída
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideOutRight {
+        from {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        to {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+    }
+`;
+document.head.appendChild(style);
+
+// Função de logout
+window.logout = function() {
+    Swal.fire({
+        title: 'Sair do Sistema',
+        text: 'Tem certeza que deseja sair?',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: '<i class="fas fa-sign-out-alt"></i> Sim, Sair',
+        cancelButtonText: '<i class="fas fa-times"></i> Cancelar',
+        customClass: {
+            confirmButton: 'btn btn-danger',
+            cancelButton: 'btn btn-secondary'
+        },
+        buttonsStyling: false
+    }).then((result) => {
+        if (result.isConfirmed) {
+            window.location.href = '/logout';
+        }
+    });
+};

@@ -16,10 +16,26 @@
             <i class="fas fa-home"></i>
             <span>Página Inicial</span>
         </a>
-        <a href="/remessas" class="menu-item">
-            <i class="fas fa-file-invoice"></i>
-            <span>Remessas</span>
-        </a>
+        
+        <!-- Menu Remessas com Submenu -->
+        <div class="menu-item-container">
+            <a href="#" class="menu-item menu-toggle" onclick="toggleSubmenu(event, 'remessas-submenu')">
+                <i class="fas fa-file-invoice"></i>
+                <span>Remessas</span>
+                <i class="fas fa-chevron-down submenu-arrow"></i>
+            </a>
+            <div class="submenu" id="remessas-submenu">
+                <a href="/remessas" class="submenu-item">
+                    <i class="fas fa-list"></i>
+                    <span>Listar Remessas</span>
+                </a>
+                <a href="/contas-convenio" class="submenu-item">
+                    <i class="fas fa-wallet"></i>
+                    <span>Gerenciar Contas</span>
+                </a>
+            </div>
+        </div>
+        
         <a href="/concedentes" class="menu-item">
             <i class="fas fa-building"></i>
             <span>Concedentes</span>
@@ -42,3 +58,40 @@
         <i class="fas fa-sign-out-alt"></i> Sair
     </button>
 </div>
+
+<script>
+function toggleSubmenu(event, submenuId) {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    const submenu = document.getElementById(submenuId);
+    const arrow = event.currentTarget.querySelector('.submenu-arrow');
+    
+    if (!submenu || !arrow) {
+        console.error('Submenu ou arrow não encontrado');
+        return;
+    }
+    
+    // Toggle submenu visibility
+    const isActive = submenu.classList.contains('active');
+    
+    if (isActive) {
+        submenu.classList.remove('active');
+        arrow.classList.remove('rotate');
+    } else {
+        submenu.classList.add('active');
+        arrow.classList.add('rotate');
+    }
+    
+    console.log('Submenu toggled:', submenuId, 'Active:', !isActive);
+}
+
+// Debug - verificar se elementos existem ao carregar
+document.addEventListener('DOMContentLoaded', function() {
+    const submenu = document.getElementById('remessas-submenu');
+    console.log('Submenu encontrado:', submenu !== null);
+    if (submenu) {
+        console.log('Classes do submenu:', submenu.className);
+    }
+});
+</script>

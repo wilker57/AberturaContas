@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 
 {% block title %}Remessas - Abertura de Contas{% endblock %}
 
@@ -9,88 +9,59 @@
         <a href="{{ url_for('views.criar_remessa') }}" class="btn btn-success">
             <i class="fas fa-plus"></i> Nova
         </a>
-        
     </div>
     <div class="content-card">
         {% if remessas %}
-<!-- Toolbar da tabela -->
-<form method="GET" action="{{ url_for('views.remessas') }}" class="table-toolbar">
-
-  <!-- Busca com ícone -->
-  <div class="input-icon">
-    <i class="" aria-hidden="true"></i>
-    <input
-      type="search"
-      id="searchText"
-      name="search"
-      class="form-control"
-      placeholder="Buscar por proponente..."
-      aria-label="Buscar por nome do proponente"
-      value="{{ search_term }}"
-    >
-  </div>
-
-  <!-- Intervalo de datas -->
-  <div class="date-range">
-    <label for="dateFrom"></label>
-    <input
-      type="date"
-      id="dateFrom"
-      name="date_from"
-      class="form-control"
-      aria-label="Filtrar a partir de"
-      value="{{ date_from }}"
-    >
-  </div>
-
-  <div class="form-group">
-    <label for="situacao">Situação</label>
-    <select id="situacao" name="situacao" class="form-control">
-      <option value="">Todas</option>
-      {% set situacao_atual = situacao_filter or '' %}
-      <option value="Aguardando retorno" {% if situacao_atual == 'Aguardando retorno' %}selected{% endif %}>Aguardando retorno</option>
-      <option value="Aprovado" {% if situacao_atual == 'Aprovado' %}selected{% endif %}>Aprovado</option>
-      <option value="Conta Aberta" {% if situacao_atual == 'Conta Aberta' %}selected{% endif %}>Conta Aberta</option>
-      <option value="Em Preparação" {% if situacao_atual == 'Em Preparação' %}selected{% endif %}>Em Preparação</option>
-      <option value="Enviado" {% if situacao_atual == 'Enviado' %}selected{% endif %}>Enviado</option>
-      <option value="Erro" {% if situacao_atual == 'Erro' %}selected{% endif %}>Erro</option>
-      <option value="Pendente de envio" {% if situacao_atual == 'Pendente de envio' %}selected{% endif %}>Pendente de envio</option>
-    </select>
-  </div>
-
-  <!-- Ações -->
-  <div class="toolbar-actions">
-    <button type="submit" id="searchButton" class="btn btn-primary">Buscar</button>
-    <a href="{{ url_for('views.remessas') }}" class="btn btn-outline">Limpar</a>
-    
-    
-  </div>
-
-</form>
+        <form method="GET" action="{{ url_for('views.remessas') }}" class="table-toolbar">
+            <div class="input-icon">
+                <i class="fas fa-search" aria-hidden="true"></i>
+                <input type="search" id="searchText" name="search" class="form-control" placeholder="Buscar por proponente..." aria-label="Buscar por nome do proponente" value="{{ search_term }}">
+            </div>
+            <div class="date-range">
+                <label for="dateFrom">Data</label>
+                <input type="date" id="dateFrom" name="date_from" class="form-control" aria-label="Filtrar a partir de" value="{{ date_from }}">
+            </div>
+            <div class="form-group">
+                <label for="situacao">Situacao</label>
+                <select id="situacao" name="situacao" class="form-control">
+                    <option value="">Todas</option>
+                    {% set situacao_atual = situacao_filter or '' %}
+                    <option value="Aguardando retorno" {% if situacao_atual == 'Aguardando retorno' %}selected{% endif %}>Aguardando retorno</option>
+                    <option value="Aprovado" {% if situacao_atual == 'Aprovado' %}selected{% endif %}>Aprovado</option>
+                    <option value="Conta Aberta" {% if situacao_atual == 'Conta Aberta' %}selected{% endif %}>Conta Aberta</option>
+                    <option value="Em Preparacao" {% if situacao_atual == 'Em Preparacao' %}selected{% endif %}>Em Preparacao</option>
+                    <option value="Enviado" {% if situacao_atual == 'Enviado' %}selected{% endif %}>Enviado</option>
+                    <option value="Erro" {% if situacao_atual == 'Erro' %}selected{% endif %}>Erro</option>
+                    <option value="Pendente de envio" {% if situacao_atual == 'Pendente de envio' %}selected{% endif %}>Pendente de envio</option>
+                </select>
+            </div>
+            <div class="toolbar-actions">
+                <button type="submit" id="searchButton" class="btn btn-primary">Buscar</button>
+                <a href="{{ url_for('views.remessas') }}" class="btn btn-outline">Limpar</a>
+            </div>
+        </form>
 
         <div class="table-container">
             <table class="data-table">
                 <thead>
                     <tr>
-                        
                         <th>Proponente</th>
                         <th>CPF/CNPJ</th>
-                        <th>Convênio</th>
-                        <th>Situação</th>
+                        <th>Convenio</th>
+                        <th>Situacao</th>
                         <th>Data</th>
-                        <th>Ações</th>
+                        <th>Acoes</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for remessa in remessas %}
                     <tr>
-                        
                         <td>{{ remessa.nome_proponente }}</td>
                         <td>{{ remessa.cpf_cnpj }}</td>
                         <td>{{ remessa.num_convenio }}</td>
                         <td>
-                            {% if remessa.situacao == 'Em Preparação' %}
-                                <span class="badge badge-warning">Em Preparação</span>
+                            {% if remessa.situacao == 'Em Preparacao' %}
+                                <span class="badge badge-warning">Em Preparacao</span>
                             {% elif remessa.situacao == 'Enviado' %}
                                 <span class="badge badge-info">Enviado</span>
                             {% elif remessa.situacao == 'Aguardando retorno' %}
@@ -105,22 +76,33 @@
                                 <span class="badge badge-success">Aprovado</span>
                             {% else %}
                                 <span class="badge badge-secondary">{{ remessa.situacao }}</span>
-                                
                             {% endif %}
                         </td>
                         <td>{{ remessa.dt_remessa.strftime('%d/%m/%Y') if remessa.dt_remessa else '-' }}</td>
                         <td>
                             <div class="action-buttons">
-                                      <!-- Botão PDF -->    
-                        <a href="{{ url_for('views.visualizar_remessa', id_remessa=remessa.id_remessa) }}" class="btn btn-pdf">
-                            <i class="fas fa-eye"></i>
-                            </a>
-                                <a href="{{ url_for('views.editar_remessa', id_remessa=remessa.id_remessa) }}" class="btn btn-sm btn-warning">
-                                    <i class="fas fa-edit"></i> 
+                                <a href="{{ url_for('views.visualizar_remessa', id_remessa=remessa.id_remessa) }}" class="btn btn-pdf" title="Visualizar">
+                                    <i class="fas fa-eye"></i>
                                 </a>
+                                <a href="{{ url_for('views.editar_remessa', id_remessa=remessa.id_remessa) }}" class="btn btn-sm btn-warning" title="Editar">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                        <button
+                            type="button"
+                            class="btn btn-sm btn-success"
+                            title="Vincular conta"
+                            data-remessa="{{ remessa.id_remessa }}"
+                            data-proponente="{{ remessa.nome_proponente|e }}"
+                            data-convenio="{{ remessa.num_convenio|e }}"
+                            data-numremessa="{{ remessa.num_remessa|e }}"
+                            onclick="openContaModal(this)"
+                            {% if remessa.situacao == 'Conta Aberta' %}disabled aria-disabled="true"{% endif %}
+                        >
+                            <i class="fas fa-plus"></i>
+                        </button>
                                 <form method="POST" action="{{ url_for('views.excluir_remessa', id_remessa=remessa.id_remessa) }}" style="display: inline;" class="delete-form" data-message="Tem certeza que deseja excluir esta remessa?" data-confirmed="false">
                                     <button type="submit" class="btn btn-sm btn-danger" title="Excluir remessa">
-                                        <i class="fas fa-trash"></i> 
+                                        <i class="fas fa-trash"></i>
                                     </button>
                                 </form>
                             </div>
@@ -130,6 +112,7 @@
                 </tbody>
             </table>
         </div>
+        {% include 'components/pagination.html' %}
         {% else %}
         <div class="empty-state">
             <i class="fas fa-file-invoice fa-3x"></i>
@@ -142,4 +125,60 @@
         {% endif %}
     </div>
 </div>
+
+<div class="modal" id="modal-conta" style="display:none;">
+    <div class="modal-content">
+        <button type="button" class="close close-compact" aria-label="Fechar" onclick="closeModal('modal-conta')">
+            <i class="fas fa-times"></i>
+        </button>
+        <div class="section-header">
+            <h3>Vincular conta a remessa</h3>
+            <div id="modal-remessa-info" class="remessa-info-lines"></div>
+        </div>
+        <form method="POST" action="{{ url_for('views.vincular_conta_remessa') }}" class="grid-form">
+            <input type="hidden" name="id_remessa" id="modal-id-remessa">
+            <div class="form-group">
+                <label for="modal-id-agencia">Agencia</label>
+                <select id="modal-id-agencia" name="id_agencia" class="form-control" required>
+                    <option value="">Selecione</option>
+                    {% for agencia in agencias_modal %}
+                        <option value="{{ agencia.id_agencia }}">{{ agencia.nome_agencia }} - {{ agencia.banco_nome }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="modal-num-conta">Numero da Conta</label>
+                <input type="text" id="modal-num-conta" name="num_conta" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label for="modal-dv-conta">Digito</label>
+                <input type="text" id="modal-dv-conta" name="dv_conta" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label for="modal-dt-abertura">Data de Abertura</label>
+                <input type="date" id="modal-dt-abertura" name="dt_abertura" class="form-control" value="{{ date.today().isoformat() }}" required>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-success btn-full"><i class="fas fa-link"></i> Vincular Conta</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openContaModal(btn) {
+    const id = btn.dataset.remessa;
+    const proponente = btn.dataset.proponente;
+    const convenio = btn.dataset.convenio;
+    const numeroRemessa = btn.dataset.numremessa;
+    document.getElementById('modal-id-remessa').value = id;
+    const info = document.getElementById('modal-remessa-info');
+    info.innerHTML = `
+        <div><strong>Nº Remessa:</strong> ${numeroRemessa}</div>
+        <div><strong>Proponente:</strong> ${proponente}</div>
+        <div><strong>Convênio:</strong> ${convenio}</div>
+    `;
+    document.getElementById('modal-conta').style.display = 'block';
+}
+</script>
 {% endblock %}

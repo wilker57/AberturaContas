@@ -31,29 +31,17 @@
             </div>
 
             <div class="form-group">
-                <label for="id_remessa">Remessa:</label>
-                <select id="id_remessa" name="id_remessa" required class="form-control">
-                    {% for remessa in remessas %}
-                    <option value="{{ remessa.id_remessa }}" {% if remessa.id_remessa == conta.id_remessa %}selected{% endif %}>
-                        {{ remessa.num_processo }} - {{ remessa.nome_proponente }}
-                    </option>
-                    {% endfor %}
-                </select>
+                <label>Remessa:</label>
+                <input type="text" class="form-control" value="{{ conta.num_processo }} - {{ conta.nome_proponente }}" readonly>
             </div>
 
             <div class="form-group">
-                <label for="id_agencia">Agência:</label>
-                <select id="id_agencia" name="id_agencia" required class="form-control">
-                    {% for agencia in agencias %}
-                    <option value="{{ agencia.id_agencia }}" {% if agencia.id_agencia == conta.id_agencia %}selected{% endif %}>
-                        {{ agencia.banco_nome }} - {{ agencia.nome_agencia }} ({{ agencia.num_agencia }})
-                    </option>
-                    {% endfor %}
-                </select>
+                <label>Agência:</label>
+                <input type="text" class="form-control" value="{{ conta.nome_agencia }} - {{ conta.banco_nome }}" readonly>
             </div>
 
             <div class="form-actions">
-                <button type="submit" class="btn btn-warning">
+                <button type="submit" class="btn btn-success">
                     <i class="fas fa-save"></i> Salvar Alterações
                 </button>
                 <button type="button" class="btn btn-outline-secondary" onclick="window.location.href='{{ url_for('views.contas_convenio') }}'">
@@ -64,3 +52,4 @@
     </div>
 </div>
 {% endblock %}
+

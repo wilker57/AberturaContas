@@ -1,80 +1,103 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 
-{% block title %}Contas Convênio - Abertura de Contas{% endblock %}
+{% block title %}Contas Convenio - Abertura de Contas{% endblock %}
 
 {% block content %}
 <div class="page-container">
     <div class="page-header">
-        <h1>Contas Convênio</h1>
-        <a href="{{ url_for('views.criar_conta_convenio') }}" class="btn btn-success">
-            <i class="fas fa-plus"></i> Nova
-        </a>
+        <div>
+            <h1>Contas de Convênio</h1>
+            <p class="text-muted">Visualize e filtre as contas vinculadas às remessas.</p>
+        </div>
     </div>
 
     <div class="content-card">
-        {% if contas %}
-      <!-- Toolbar da tabela -->
         <form method="GET" class="table-toolbar" role="search">
-
-            <!-- Busca com icone -->
             <div class="input-icon">
                 <i class="fas fa-search" aria-hidden="true"></i>
-                <input
-                  type="search"
-                  name="search"
-                  class="form-control"
-                  placeholder="Buscar por Proponente..."
-                  aria-label="Buscar contas de convenio"
-                  value="{{ search_term or '' }}"
-                >
+                <input type="search" name="search" class="form-control" placeholder="Buscar por proponente" aria-label="Buscar contas de convenio" value="{{ search_term or '' }}">
+            </div>
+            <div class="form-group" style="min-width:180px;">
+                <label for="situacao">Situação da Remessa</label>
+                <select id="situacao" name="situacao" class="form-control" onchange="this.form.submit()">
+                    {% set s = situacao_filter or '' %}
+                    <option value="">Todas</option>
+                    <option value="Aguardando retorno" {% if s == 'Aguardando retorno' %}selected{% endif %}>Aguardando retorno</option>
+                    <option value="Aprovado" {% if s == 'Aprovado' %}selected{% endif %}>Aprovado</option>
+                    <option value="Conta Aberta" {% if s == 'Conta Aberta' %}selected{% endif %}>Conta Aberta</option>
+                    <option value="Em Preparacao" {% if s == 'Em Preparacao' %}selected{% endif %}>Em Preparacao</option>
+                    <option value="Enviado" {% if s == 'Enviado' %}selected{% endif %}>Enviado</option>
+                    <option value="Erro" {% if s == 'Erro' %}selected{% endif %}>Erro</option>
+                    <option value="Pendente de envio" {% if s == 'Pendente de envio' %}selected{% endif %}>Pendente de envio</option>
+                </select>
             </div>
 
-            <!-- Acoes -->
             <div class="toolbar-actions">
                 <button type="submit" class="btn btn-primary">Buscar</button>
                 <a href="{{ url_for('views.contas_convenio') }}" class="btn btn-outline">Limpar</a>
-             
             </div>
-
         </form>
 
-<div class="table-container">
+        {% if contas %}
+        <div class="table-container">
             <table class="data-table">
                 <thead>
                     <tr>
-                        <th>Data Abertura</th>
                         <th>Proponente</th>
-                         <th>Banco</th>
-                         <th>Agência</th>
-                        <th>Nº da Conta</th>
-                        <th>DV</th>
-
+                        <th>Agência</th>
+                        <th>Conta</th>
+                        <th>DV Conta</th>
+                        <th>Data Abertura</th>
+                        <th>Situação Remessa</th>
                         <th>Ações</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for conta in contas %}
                     <tr>
-                        
-                        <td>{{ conta.dt_abertura.strftime('%d/%m/%Y') if conta.dt_abertura else '-' }}</td>
                         <td>{{ conta.nome_proponente }}</td>
-                        <td>{{ conta.banco_nome }}</td>
                         <td>{{ conta.nome_agencia }}</td>
                         <td><strong>{{ conta.num_conta }}</strong></td>
                         <td>{{ conta.dv_conta }}</td>
-                        
-                        
-                        
+                        <td>{{ conta.dt_abertura.strftime('%d/%m/%Y') if conta.dt_abertura else '-' }}</td>
+                        <td>
+                            {% if conta.situacao == 'Em Preparacao' %}
+                                <span class="badge badge-warning">Em Preparacao</span>
+                            {% elif conta.situacao == 'Enviado' %}
+                                <span class="badge badge-info">Enviado</span>
+                            {% elif conta.situacao == 'Aguardando retorno' %}
+                                <span class="badge badge-primary">Aguardando retorno</span>
+                            {% elif conta.situacao == 'Pendente de envio' %}
+                                <span class="badge badge-secondary">Pendente de envio</span>
+                            {% elif conta.situacao == 'Conta Aberta' %}
+                                <span class="badge badge-success">Conta Aberta</span>
+                            {% elif conta.situacao == 'Erro' %}
+                                <span class="badge badge-danger">Erro</span>
+                            {% elif conta.situacao == 'Aprovado' %}
+                                <span class="badge badge-success">Aprovado</span>
+                            {% else %}
+                                <span class="badge badge-secondary">{{ conta.situacao }}</span>
+                            {% endif %}
+                        </td>
                         <td>
                             <div class="action-buttons">
-                                <a href="{{ url_for('views.editar_conta_convenio', id_conta_convenio=conta.id_conta_convenio) }}" class="btn btn-sm btn-warning">
-                                    <i class="fas fa-edit"></i> 
+                                {% if session.user_profile == 'ADMIN' %}
+                                <a href="{{ url_for('views.editar_conta_convenio', id_conta_convenio=conta.id_conta_convenio) }}" class="btn btn-sm btn-warning" title="Editar">
+                                    <i class="fas fa-edit"></i>
                                 </a>
-                                <form method="POST" action="{{ url_for('views.excluir_conta_convenio', id_conta_convenio=conta.id_conta_convenio) }}" style="display: inline;" class="delete-form" data-message="Tem certeza que deseja excluir esta conta convênio?">
-                                    <button type="submit" class="btn btn-sm btn-danger">
-                                        <i class="fas fa-trash"></i> 
+                                <form method="POST" action="{{ url_for('views.excluir_conta_convenio', id_conta_convenio=conta.id_conta_convenio) }}" style="display: inline;" class="delete-form" data-message="Tem certeza que deseja excluir esta conta convenio?">
+                                    <button type="submit" class="btn btn-sm btn-danger" title="Excluir">
+                                        <i class="fas fa-trash"></i>
                                     </button>
                                 </form>
+                                {% else %}
+                                <button type="button" class="btn btn-sm btn-warning" title="Somente administradores" disabled aria-disabled="true">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-danger" title="Somente administradores" disabled aria-disabled="true">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                                {% endif %}
                             </div>
                         </td>
                     </tr>
@@ -82,14 +105,12 @@
                 </tbody>
             </table>
         </div>
+        {% include 'components/pagination.html' %}
         {% else %}
         <div class="empty-state">
             <i class="fas fa-credit-card fa-3x"></i>
-            <h3>Nenhuma conta convênio cadastrada</h3>
-            <p>Comece adicionando a primeira conta convênio ao sistema.</p>
-            <a href="{{ url_for('views.criar_conta_convenio') }}" class="btn btn-success">
-                <i class="fas fa-plus"></i> Criar Primeira Conta Convênio
-            </a>
+            <h3>Nenhuma conta cadastrada</h3>
+            <p>Use o fluxo de remessas para vincular a primeira conta de convênio.</p>
         </div>
         {% endif %}
     </div>
